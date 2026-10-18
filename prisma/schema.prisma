@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Domain Enums
+// ==========================================
+
+enum WorkItemType {
+  INCIDENT
+  CUSTOMER_ISSUE
+  PAYMENT
+  COMPLIANCE
+  TASK
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum WorkItemStatus {
+  OPEN
+  IN_PROGRESS
+  AWAITING_APPROVAL
+  AWAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TeamRole {
+  VIEWER
+  MEMBER
+  LEAD
+  ADMIN
+}
+
+enum SystemRole {
+  OPERATOR
+  SUPER_ADMIN
+}
+
+enum TicketChannel {
+  PORTAL
+  WIDGET
+  API
+  EMAIL
+}
+
+enum ActivityAction {
+  CREATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  CLAIMED
+  COMMENT_ADDED
+  INTERNAL_NOTE_ADDED
+  WORKFLOW_APPROVED
+  ESCALATED
+  UPDATED
+  CUSTOMER_CONFIRMED
+}
+
+enum OutboxJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
+// ==========================================
+// Customer & Public Ticket Models
+// ==========================================
+
+model Customer {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  company   String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets  Ticket[]
+  comments Comment[]
+
+  @@index([email])
+}
+
+model Ticket {
+  id            String        @id @default(uuid())
+  ticketNumber  Int           @unique @default(autoincrement())
+  trackingToken String        @unique @default(uuid())
+  title         String
+  description   String
+  category      WorkItemType  @default(CUSTOMER_ISSUE)
+  priority      Priority      @default(MEDIUM)
+  channel       TicketChannel @default(PORTAL)
+  status        WorkItemStatus @default(OPEN)
+  
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  workItemId    String?       @unique
+  workItem      WorkItem?     @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+
+  csatRating    Int?          // 1-5 customer satisfaction
+  csatFeedback  String?
+  
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  comments      Comment[]
+
+  @@index([customerId])
+  @@index([trackingToken])
+  @@index([status, priority])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ==========================================
+// Authentication & Organization Models
+// ==========================================
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  avatarUrl    String?
+  isActive     Boolean    @default(true)
+  systemRole   SystemRole @default(OPERATOR)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  memberships       Membership[]
+  assignedWorkItems WorkItem[]      @relation("AssignedWorkItems")
+  createdWorkItems  WorkItem[]      @relation("CreatedWorkItems")
+  comments          Comment[]
+  activities        ActivityEvent[]
+  idempotencyKeys   IdempotencyKey[]
+  settingUpdates    SystemSetting[]
+
+  @@index([email])
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+  workItems   WorkItem[]
+
+  @@index([slug])
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  userId    String
+  teamId    String
+  role      TeamRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([teamId, role])
+  @@index([userId])
+}
+
+// ==========================================
+// Operational Work Item Model
+// ==========================================
+
+model WorkItem {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  type        WorkItemType
+  priority    Priority       @default(MEDIUM)
+  status      WorkItemStatus @default(OPEN)
+
+  teamId      String
+  assigneeId  String?
+  creatorId   String
+
+  // Optional link to original customer ticket
+  ticket      Ticket?
+
+  dueDate     DateTime?
+  slaDeadline DateTime?
+  slaBreached Boolean        @default(false)
+  completedAt DateTime?
+
+  // Integer version for optimistic locking concurrency control
+  version     Int            @default(1)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  team        Team           @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  assignee    User?          @relation("AssignedWorkItems", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator     User           @relation("CreatedWorkItems", fields: [creatorId], references: [id], onDelete: Restrict)
+
+  comments    Comment[]
+  activities  ActivityEvent[]
+
+  @@index([teamId, status, priority, createdAt, id])
+  @@index([teamId, assigneeId, status])
+  @@index([teamId, createdAt(sort: Desc), id])
+  @@index([slaBreached, status])
+  @@index([creatorId])
+}
+
+// ==========================================
+// Discussion & Audit Models
+// ==========================================
+
+model Comment {
+  id               String    @id @default(uuid())
+  workItemId       String?
+  ticketId         String?
+  
+  authorId         String?   // Internal Operator ID
+  customerAuthorId String?   // External Customer ID
+
+  // CRITICAL: isInternal = true means visible ONLY to operators (hidden from customer)
+  isInternal       Boolean   @default(false)
+  body             String
+  attachments      Json?     // Array of Cloudinary attachment objects [{ url, filename, size, format }]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workItem         WorkItem? @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  ticket           Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author           User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  customerAuthor   Customer? @relation(fields: [customerAuthorId], references: [id], onDelete: SetNull)
+
+  @@index([workItemId, createdAt(sort: Asc)])
+  @@index([ticketId, createdAt(sort: Asc)])
+}
+
+model ActivityEvent {
+  id            String         @id @default(uuid())
+  workItemId    String
+  actorId       String?
+  action        ActivityAction
+  previousState Json?
+  newState      Json?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  actor    User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([workItemId, createdAt(sort: Asc)])
+  @@index([actorId, createdAt])
+}
+
+// ==========================================
+// Reliability & Infrastructure Models
+// ==========================================
+
+model IdempotencyKey {
+  id             String    @id @default(uuid())
+  key            String    @unique
+  userId         String?
+  requestMethod  String
+  requestPath    String
+  requestHash    String
+  statusCode     Int?
+  responseHeaders Json?
+  responseBody   Json?
+  status         String    @default("PROCESSING") // PROCESSING, RESOLVED, FAILED
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+  @@index([userId, key])
+}
+
+model OutboxJob {
+  id            String          @id @default(uuid())
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payload       Json
+  status        OutboxJobStatus @default(PENDING)
+  attempts      Int             @default(0)
+  maxAttempts   Int             @default(5)
+  nextRetryAt   DateTime        @default(now())
+  processedAt   DateTime?
+  lastError     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([aggregateType, aggregateId])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  category  String   // 'general', 'branding', 'email', 'sla', 'security'
+  key       String   @unique
+  value     Json
+  isSecret  Boolean  @default(false)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  updater   User?    @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@index([category])
+}
