@@ -6,6 +6,25 @@ import { prisma } from '../apps/api/src/shared/database';
 describe('Critical Behaviour 3: Idempotency & Repeated Request Safety', () => {
   const app = createApp();
 
+  beforeAll(async () => {
+    // Ensure default team and dispatcher bot user exist in test database
+    await prisma.team.upsert({
+      where: { slug: 'support' },
+      update: {},
+      create: { name: 'Customer Support', slug: 'support' },
+    });
+    await prisma.user.upsert({
+      where: { email: 'system@instos.internal' },
+      update: {},
+      create: {
+        email: 'system@instos.internal',
+        name: 'instOS Dispatcher Bot',
+        passwordHash: 'dummy',
+        systemRole: 'SUPER_ADMIN',
+      },
+    });
+  });
+
   afterAll(async () => {
     await prisma.$disconnect();
   });

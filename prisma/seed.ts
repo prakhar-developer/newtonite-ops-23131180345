@@ -35,6 +35,7 @@ async function main() {
     { email: 'lead.payments@instos.dev', name: 'Marcus Brody (Payments Lead)', systemRole: SystemRole.OPERATOR, avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
     { email: 'member.payments@instos.dev', name: 'Elena Rostova (Payments Member)', systemRole: SystemRole.OPERATOR, avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150' },
     { email: 'lead.compliance@instos.dev', name: 'David Kim (Compliance Lead)', systemRole: SystemRole.OPERATOR, avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150' },
+    { email: 'member.compliance@instos.dev', name: 'Hannah Abbott (Compliance Member)', systemRole: SystemRole.OPERATOR, avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
     { email: 'viewer@instos.dev', name: 'Victoria Vance (Viewer)', systemRole: SystemRole.OPERATOR, avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150' },
     { email: 'system@instos.internal', name: 'instOS Dispatcher Bot', systemRole: SystemRole.SUPER_ADMIN, avatarUrl: '' },
   ];
@@ -70,6 +71,7 @@ async function main() {
     { userId: users['lead.payments@instos.dev'].id, teamId: teams['payments'].id, role: TeamRole.LEAD },
     { userId: users['member.payments@instos.dev'].id, teamId: teams['payments'].id, role: TeamRole.MEMBER },
     { userId: users['lead.compliance@instos.dev'].id, teamId: teams['compliance'].id, role: TeamRole.LEAD },
+    { userId: users['member.compliance@instos.dev'].id, teamId: teams['compliance'].id, role: TeamRole.MEMBER },
 
     // Viewer has VIEWER in all teams
     { userId: users['viewer@instos.dev'].id, teamId: teams['support'].id, role: TeamRole.VIEWER },
