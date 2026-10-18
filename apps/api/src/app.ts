@@ -11,6 +11,7 @@ import { teamsRouter } from './modules/teams/teams.router';
 import { usersRouter } from './modules/users/users.router';
 import { settingsRouter } from './modules/settings/settings.router';
 import { prisma } from './shared/database';
+import { redisManager } from './shared/redis';
 
 export function createApp() {
   const app = express();
@@ -46,6 +47,11 @@ export function createApp() {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         database: 'connected',
+        redis: redisManager.isAvailable ? 'connected' : (env.REDIS_URL ? 'connecting' : 'in-memory-fallback'),
+        integrations: {
+          email: env.RESEND_API_KEY ? 'resend-production' : 'ethereal-preview-mode',
+          storage: (env.CLOUDINARY_URL || env.CLOUDINARY_CLOUD_NAME) ? 'cloudinary-production' : 'local-disk-fallback',
+        },
         uptime: process.uptime(),
       });
     } catch {

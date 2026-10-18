@@ -9,6 +9,11 @@
     currentScript?.getAttribute('data-api-url') ||
     (window as unknown as { instOS_API_URL?: string }).instOS_API_URL ||
     'http://localhost:4000/api/v1';
+  const portalUrl = (
+    currentScript?.getAttribute('data-portal-url') ||
+    (window as unknown as { instOS_PORTAL_URL?: string }).instOS_PORTAL_URL ||
+    'http://localhost:5173'
+  ).replace(/\/$/, '');
   const defaultTeam = currentScript?.getAttribute('data-team') || 'support';
 
   // Inject Widget Styles
@@ -291,7 +296,7 @@
 
       const trackNow = panel.querySelector('#instos-track-now') as HTMLButtonElement;
       trackNow.onclick = () => {
-        window.open(`http://localhost:5173/portal/track/${data.data.trackingToken}`, '_blank');
+        window.open(`${portalUrl}/portal/track/${data.data.trackingToken}`, '_blank');
       };
     } catch (err) {
       alert(`Error submitting request: ${(err as Error).message}`);
@@ -322,7 +327,7 @@
       (panel.querySelector('#instos-track-status') as HTMLElement).textContent = ticket.status;
       (panel.querySelector('#instos-track-priority') as HTMLElement).textContent = ticket.priority;
       const link = panel.querySelector('#instos-track-link') as HTMLAnchorElement;
-      link.href = `http://localhost:5173/portal/track/${ticket.trackingToken}`;
+      link.href = `${portalUrl}/portal/track/${ticket.trackingToken}`;
     } catch (err) {
       alert(`Error finding ticket: ${(err as Error).message}`);
     } finally {

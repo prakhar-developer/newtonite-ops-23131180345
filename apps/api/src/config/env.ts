@@ -15,16 +15,20 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('12h'),
   CORS_ORIGIN: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
   
+  // Frontend URL for email tracking links
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
+
   // Resend Free Tier
   RESEND_API_KEY: z.string().optional().default(''),
   RESEND_FROM_EMAIL: z.string().default('instOS Support <onboarding@resend.dev>'),
   
-  // Cloudinary Free Tier
+  // Cloudinary Free Tier (Supports CLOUDINARY_URL or separate credentials)
+  CLOUDINARY_URL: z.string().optional().default(''),
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
   CLOUDINARY_API_SECRET: z.string().optional().default(''),
   
-  // Redis Free Tier
+  // Redis Free Tier (Upstash, Railway, or local container)
   REDIS_URL: z.string().optional().default(''),
 
   // Outbox & SLA Intervals

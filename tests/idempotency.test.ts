@@ -30,11 +30,13 @@ describe('Critical Behaviour 3: Idempotency & Repeated Request Safety', () => {
   });
 
   it('Repeated request with same key creates single ticket and replays cached response', async () => {
-    const key = `test-key-${Date.now()}`;
+    const runId = Date.now();
+    const key = `test-key-${runId}`;
+    const testTitle = `Idempotent Test Ticket ${runId}`;
     const payload = {
       name: 'Idempotency Tester',
       email: 'idemp@tester.com',
-      title: 'Idempotent Test Ticket',
+      title: testTitle,
       description: 'Testing double-click protection',
       category: 'CUSTOMER_ISSUE',
       priority: 'MEDIUM',
@@ -62,7 +64,7 @@ describe('Critical Behaviour 3: Idempotency & Repeated Request Safety', () => {
 
     // Verify DB count: only 1 ticket created
     const count = await prisma.ticket.count({
-      where: { title: 'Idempotent Test Ticket' },
+      where: { title: testTitle },
     });
     expect(count).toBe(1);
   });

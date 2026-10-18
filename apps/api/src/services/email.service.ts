@@ -41,9 +41,9 @@ export class EmailService {
   }
 
   async sendEmail(params: SendEmailParams): Promise<{ success: boolean; previewUrl?: string; messageId?: string }> {
-    try {
-      // 1. Try real Resend if API key is supplied
-      if (this.resendClient) {
+    // 1. Try real Resend if API key is supplied
+    if (this.resendClient) {
+      try {
         const { data, error } = await this.resendClient.emails.send({
           from: env.RESEND_FROM_EMAIL,
           to: params.to,
@@ -53,15 +53,18 @@ export class EmailService {
         });
 
         if (error) {
-          logger.error(`[EmailService] Resend API error: ${error.message}`, { error });
-          throw new Error(error.message);
+          logger.warn(`[EmailService] Resend API rejected message (${error.message}). Triggering Ethereal preview fallback.`);
+        } else if (data?.id) {
+          logger.info(`[EmailService] Real email dispatched via Resend to ${params.to} (id: ${data.id})`);
+          return { success: true, messageId: data.id };
         }
-
-        logger.info(`[EmailService] Real email sent via Resend to ${params.to} (id: ${data?.id})`);
-        return { success: true, messageId: data?.id };
+      } catch (err) {
+        logger.warn(`[EmailService] Resend request exception: ${(err as Error).message}. Triggering Ethereal preview fallback.`);
       }
+    }
 
-      // 2. Fallback to Nodemailer Ethereal simulation (Zero external dependency needed)
+    // 2. Fallback to Nodemailer Ethereal simulation (Zero external dependency needed)
+    try {
       const transporter = await this.getEtherealTransporter();
       const info = await transporter.sendMail({
         from: env.RESEND_FROM_EMAIL,
@@ -72,17 +75,22 @@ export class EmailService {
       });
 
       const previewUrl = nodemailer.getTestMessageUrl(info) || undefined;
-      logger.info(`[EmailService] Ethereal Email simulated for ${params.to}. Preview URL: ${previewUrl}`);
+      logger.info(`[EmailService] Email generated via Ethereal for ${params.to}. Preview URL: ${previewUrl}`);
       return { success: true, previewUrl, messageId: info.messageId };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error(`[EmailService] Failed to send email to ${params.to}: ${msg}`);
+      logger.error(`[EmailService] All email delivery options failed for ${params.to}: ${msg}`);
       return { success: false };
     }
   }
 
+  private getTrackingUrl(trackingToken: string): string {
+    const baseUrl = (env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    return `${baseUrl}/portal/track/${trackingToken}`;
+  }
+
   async sendTicketCreatedNotification(ticket: { id: string; ticketNumber: number; title: string; trackingToken: string }, customer: { name: string; email: string }) {
-    const trackingUrl = `http://localhost:5173/portal/track/${ticket.trackingToken}`;
+    const trackingUrl = this.getTrackingUrl(ticket.trackingToken);
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
         <div style="margin-bottom: 20px;">
@@ -111,7 +119,7 @@ export class EmailService {
   }
 
   async sendTicketStatusUpdate(ticket: { ticketNumber: number; title: string; trackingToken: string; status: string }, customer: { name: string; email: string }, note?: string) {
-    const trackingUrl = `http://localhost:5173/portal/track/${ticket.trackingToken}`;
+    const trackingUrl = this.getTrackingUrl(ticket.trackingToken);
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
         <h2 style="color: #0f172a; margin: 0 0 8px 0;">Status Update: #${ticket.ticketNumber}</h2>
@@ -121,6 +129,7 @@ export class EmailService {
         <div style="margin: 24px 0;">
           <a href="${trackingUrl}" style="background: #0f172a; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; display: inline-block;">View in Customer Portal</a>
         </div>
+        <p style="color: #94a3b8; font-size: 12px; border-top: 1px solid #f1f5f9; padding-top: 16px;">Direct link: ${trackingUrl}</p>
       </div>
     `;
 

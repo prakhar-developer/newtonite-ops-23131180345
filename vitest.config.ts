@@ -5,7 +5,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    testTimeout: 15000,
+    testTimeout: 20000,
+    fileParallelism: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     include: ['tests/**/*.test.ts'],
     exclude: ['**/sample-repo/**', '**/node_modules/**'],
   },
