@@ -7,13 +7,26 @@ import { prisma } from './shared/database';
 
 const app = createApp();
 
-const port = Number(process.env.PORT) || env.PORT || 4000;
+const primaryPort = Number(process.env.PORT) || env.PORT || 8080;
 const host = '0.0.0.0';
 
-const server = app.listen(port, host, async () => {
-  logger.info(`🚀 [instOS API] Server listening on http://${host}:${port}${env.API_PREFIX}`);
+const server = app.listen(primaryPort, host, async () => {
+  logger.info(`🚀 [instOS API] Server listening on http://${host}:${primaryPort}${env.API_PREFIX}`);
   logger.info(`✨ [instOS API] Environment: ${env.NODE_ENV}`);
-  logger.info(`🔍 [instOS API] Health endpoint available at http://${host}:${port}/health`);
+  logger.info(`🔍 [instOS API] Health endpoint available at http://${host}:${primaryPort}/health`);
+
+  // Also bind to fallback ports 4000 and 8080 to eliminate Railway proxy target port mismatches
+  const fallbackPorts = [4000, 8080, 3000].filter((p) => p !== primaryPort);
+  for (const fallbackPort of fallbackPorts) {
+    try {
+      const extraServer = app.listen(fallbackPort, host, () => {
+        logger.info(`[instOS API] Also listening on proxy target port http://${host}:${fallbackPort}`);
+      });
+      extraServer.on('error', () => {
+        // Silently ignore if port is occupied
+      });
+    } catch {}
+  }
 
   // Verify database connection smoothly without crashing port listener
   try {
