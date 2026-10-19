@@ -32,6 +32,22 @@ const server = app.listen(primaryPort, host, async () => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     logger.info('[Prisma] Database connection confirmed.');
+
+    // Auto-seed if database is fresh (0 users)
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      logger.info('[Prisma] Fresh database detected. Auto-seeding initial personas and teams...');
+      const { exec } = await import('child_process');
+      exec('npx tsx prisma/seed.ts', (error, stdout) => {
+        if (error) {
+          logger.error(`[Prisma] Seed error: ${error.message}`);
+        } else {
+          logger.info(`[Prisma] Initial database seed completed successfully.`);
+        }
+      });
+    } else {
+      logger.info(`[Prisma] Database contains ${userCount} users. Ready.`);
+    }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(`[Prisma] Database connection warning: ${msg}. Please ensure DATABASE_URL is set in Railway.`);
