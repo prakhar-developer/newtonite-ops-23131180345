@@ -9,6 +9,20 @@ Unlike conventional closed-loop tools, instOS features a **Dual-Surface Architec
 
 ---
 
+## Live Deployments & Endpoints
+
+| Environment | Live URL | Description |
+| :--- | :--- | :--- |
+| **Production Web App** | [https://instos.inistnt.in](https://instos.inistnt.in) | Complete React 18 + Vite frontend on custom domain |
+| **Customer Support Portal** | [https://instos.inistnt.in/portal](https://instos.inistnt.in/portal) | Public ticket submission, file upload & token tracking |
+| **Operator Command Desk** | [https://instos.inistnt.in/ops](https://instos.inistnt.in/ops) | ShipNova-style triage desk with 1-click role switcher |
+| **Production API (Railway)** | [https://newtonite-ops-23131180345-production.up.railway.app](https://newtonite-ops-23131180345-production.up.railway.app) | Express + Prisma + PostgreSQL 16 backend |
+| **Live Health Check** | [https://newtonite-ops-23131180345-production.up.railway.app/health](https://newtonite-ops-23131180345-production.up.railway.app/health) | Reports status of DB, Redis, Resend & Cloudinary |
+| **Drop-in Embed Widget** | `https://instos.inistnt.in/widget.js` | Drop-in operational support script for any website |
+| **GitHub Repository** | [prakhar-developer/newtonite-ops-23131180345](https://github.com/prakhar-developer/newtonite-ops-23131180345) | Complete monorepo source code & test suites |
+
+---
+
 ## Architecture Diagram
 
 ```mermaid
@@ -40,7 +54,8 @@ flowchart TD
     subgraph Daemons["Background Daemons"]
         OutboxWorker["Outbox Worker (SKIP LOCKED)"]
         SLAWorker["SLA Breach Escalation Scanner"]
-        EmailService["Resend API / Ethereal Fallback"]
+        EmailService["Resend API (support@inistnt.in)"]
+        StorageService["Cloudinary CDN"]
     end
 
     Widget --> Gateway
@@ -53,107 +68,121 @@ flowchart TD
 
     Gateway --> Idemp --> RBAC --> SM --> DB
     DB --> OutboxWorker --> EmailService
+    Gateway --> StorageService
     DB --> SLAWorker
 ```
 
 ---
 
-## Quick Start (Run Locally in 2 Minutes)
+## Demo Personas & Evaluation Credentials
 
-### Prerequisites
-- **Node.js**: `v20+`
-- **npm**: `v10+`
-- **PostgreSQL**: Local Postgres or Docker Compose
+The application features a **1-Click Role Switcher** on the top navigation bar of the Operator Desk (`/ops`) and the login screen to test live authorization, team isolation, and approval gates instantly without typing credentials.
 
-### Option A: Running with Local Node & Postgres
+- **Master Password for all demo accounts**: `password123`
 
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Setup database schema & seed demo data
-npx prisma generate
-npm run db:push
-npm run db:seed
-
-# 3. Start API backend and Web frontend simultaneously
-npm run dev
-```
-
-- **Operations Command Center**: [http://localhost:5173](http://localhost:5173)
-- **Public Customer Support Portal**: [http://localhost:5173/portal](http://localhost:5173/portal)
-- **Backend API**: [http://localhost:4000/api/v1](http://localhost:4000/api/v1)
-
-### Option B: Running with Docker Compose
-
-```bash
-docker compose up --build
-```
-
----
-
-## Demo Personas & Credentials
-
-The web application features a **1-Click Role Switcher** on the top bar to test live authorization and RBAC boundaries instantly without typing.
-
-| Email | Password | Role & Assigned Teams | Purpose / Evaluation Use Case |
+| Persona | Email | System Role & Teams | Key Evaluation Capability |
 | :--- | :--- | :--- | :--- |
-| `admin@instos.dev` | `password123` | **Super Admin** (All Teams) | Team creation, user role governance, Outbox monitor |
-| `lead.support@instos.dev` | `password123` | **Support Lead** (Customer Support) | Review and approve transitions to Resolved |
-| `member.support@instos.dev` | `password123` | **Support Member** (Customer Support) | Claim unassigned items, triage customer tickets |
-| `lead.payments@instos.dev` | `password123` | **Payments Lead** (Payments Ops) | High-risk settlement review, lead approval gate |
-| `member.payments@instos.dev` | `password123` | **Payments Member** (Payments Ops) | Investigate chargebacks and payment disputes |
-| `viewer@instos.dev` | `password123` | **Viewer** (Read-Only across all teams) | Verify mutation rejections (`403 Forbidden` on claims/edits) |
+| **Alice Walker** | `admin@instos.dev` | **Super Admin** (All Teams) | Team provisioning, user role assignments, Outbox inspection |
+| **Sarah Chen** | `lead.support@instos.dev` | **Support Lead** (Customer Support) | Review and approve transitions to Resolved (Four-Eyes gate) |
+| **James Wilson** | `member.support@instos.dev` | **Support Member** (Customer Support) | Claim unassigned items, triage customer tickets, resolve |
+| **Marcus Brody** | `lead.payments@instos.dev` | **Payments Lead** (Payments Ops) | High-risk settlement review, lead approval gate |
+| **Elena Rostova** | `member.payments@instos.dev` | **Payments Member** (Payments Ops) | Investigate chargebacks and payment disputes |
+| **Victoria Vance** | `viewer@instos.dev` | **Viewer** (Read-Only across teams) | Verify mutation blocks (`403 Forbidden` on claims and edits) |
 
 ---
 
 ## Critical Behaviors Beyond CRUD (All Tested)
 
-| Situation | Engineered Solution | Automated Test Suite |
+| Situation | Engineered Solution | Automated Test Verification |
 | :--- | :--- | :--- |
 | **Concurrent claims** | Atomic conditional update (`UPDATE work_items SET assigneeId = :user WHERE id = :id AND assigneeId IS NULL`). Colliding claim receives `409 Conflict`. | `tests/concurrency.test.ts` fires simultaneous claims; strictly 1 succeeds. |
 | **Stale version edits** | Optimistic locking on integer `version` field. Mismatch returns `409 Conflict` with latest server snapshot and triggers UI conflict drawer. | `tests/concurrency.test.ts` asserts stale edits are rejected with metadata. |
 | **Repeated requests** | `Idempotency-Key` header with SHA-256 fingerprinting. Replays cached response with `Idempotent-Replay: true`. | `tests/idempotency.test.ts` verifies single creation on retries. |
-| **Workflow rules & Approval gate** | Server-enforced state machine. Advancing from `AWAITING_APPROVAL` to `RESOLVED` strictly requires `LEAD`/`ADMIN`, and assignee cannot approve own work. | `tests/workflow.test.ts` verifies invalid jumps and Four-Eyes rule. |
+| **Workflow rules & Approval gate** | Server-enforced state machine. Advancing from `AWAITING_APPROVAL` to `RESOLVED` strictly requires `LEAD`/`ADMIN`, and assignee cannot approve own work (Four-Eyes rule). | `tests/workflow.test.ts` verifies invalid jumps and Four-Eyes rule. |
 | **Resource-level authorization** | Multi-team RBAC (`Viewer`, `Member`, `Lead`, `Admin`). Cross-team item access returns `404 Not Found` to prevent enumeration. | `tests/rbac.test.ts` verifies cross-team isolation and viewer blocks. |
 | **Reliable async outbox** | Side-effects written to `outbox_jobs` in primary transaction. Poller uses `SKIP LOCKED`, exponential backoff, and DLQ. | Verified in `apps/api/src/modules/outbox/outbox.worker.ts`. |
 
 ---
 
-## Free-Tier Cloud Deployment Guide
-
-### 1. Deploy Backend & Database on Railway
-1. Create a new project on [Railway](https://railway.app).
-2. Add **PostgreSQL** from the Railway template gallery.
-3. Deploy the backend from your GitHub repository using the included `Dockerfile`.
-4. Set environment variables:
-   - `DATABASE_URL`: `${{Postgres.DATABASE_URL}}`
-   - `JWT_SECRET`: Generate a 32+ character random secret
-   - `RESEND_API_KEY`: *(Optional)* Your free Resend key from [resend.com](https://resend.com)
-   - `CLOUDINARY_CLOUD_NAME`: *(Optional)* From [cloudinary.com](https://cloudinary.com)
-   - `CLOUDINARY_API_KEY`: *(Optional)*
-   - `CLOUDINARY_API_SECRET`: *(Optional)*
-
-### 2. Deploy Frontend on Vercel
-1. Import repository into [Vercel](https://vercel.com).
-2. Root directory: `.`
-3. Build command: `npm run build:web`
-4. Output directory: `apps/web/dist`
-5. Environment variable: `VITE_API_URL=https://your-railway-app.up.railway.app/api/v1`
-
----
-
 ## Drop-In Website Widget (`widget.js`)
 
-Any external website can embed the instOS support widget with two lines of HTML:
+Any external website or corporate portal can drop in the instOS operational support widget with a single `<script>` tag:
 
 ```html
+<!-- Drop in before </body> on any external website -->
+<script src="https://instos.inistnt.in/widget.js"></script>
+```
+
+Optional customization attributes:
+```html
 <script 
-  src="https://your-domain.com/widget.js" 
-  data-api-url="https://your-domain.com/api/v1" 
+  src="https://instos.inistnt.in/widget.js"
+  data-api-url="https://newtonite-ops-23131180345-production.up.railway.app/api/v1"
+  data-portal-url="https://instos.inistnt.in"
   data-team="support">
 </script>
 ```
+
+Features included in the widget:
+- Floating launcher button with badge animations.
+- Embedded ticket submission form with category and urgency pickers.
+- Base64 screenshot/file attachment uploading directly to Cloudinary.
+- Instant tracking token generation with deep link to the customer portal.
+- Search and track status directly inside the floating widget.
+
+---
+
+## Production Cloud Integrations
+
+instOS is configured with real cloud services and zero-config local simulation fallbacks:
+
+1. **Transactional Email (Resend API)**:
+   - Configured with live API key and verified custom domain: `support@inistnt.in`.
+   - Outbox worker dispatches ticket creation notices and status updates with customer tracking links.
+   - Fallback: Local Nodemailer Ethereal simulation with logged preview URLs when unconfigured.
+
+2. **Attachment & Screenshot Storage (Cloudinary CDN)**:
+   - Configured with production Cloudinary cloud `sglfwp5c`.
+   - Streams screenshots and document attachments to Cloudinary's secure CDN.
+   - Fallback: Local disk storage in `/uploads` directory when unconfigured.
+
+3. **Database & Cache (PostgreSQL 16 & Redis)**:
+   - Hosted on Railway PostgreSQL with automatic schema synchronization and deterministic auto-seeder.
+   - Sliding-window rate limiter protecting public ticket endpoints with Redis / in-memory fallback.
+
+---
+
+## Running Locally
+
+### Prerequisites
+- **Node.js**: `v20+`
+- **npm**: `v10+`
+- **PostgreSQL**: Local Postgres 16 instance or Docker
+
+### Quick Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/prakhar-developer/newtonite-ops-23131180345.git
+cd newtonite-ops-23131180345
+
+# 2. Install dependencies (links local packages)
+npm install
+
+# 3. Configure environment
+cp .env.example .env
+
+# 4. Generate Prisma client & push schema
+npm run db:push
+npm run db:seed
+
+# 5. Start dev server (API on :4000, Web on :5173)
+npm run dev
+```
+
+- **Operations Desk**: [http://localhost:5173/ops](http://localhost:5173/ops)
+- **Customer Portal**: [http://localhost:5173/portal](http://localhost:5173/portal)
+- **API Health Check**: [http://localhost:4000/health](http://localhost:4000/health)
 
 ---
 
@@ -163,4 +192,17 @@ Any external website can embed the instOS support widget with two lines of HTML:
 npm test
 ```
 
-Runs the full Vitest integration suite covering concurrency, idempotency, workflow state rules, and resource-level RBAC.
+Runs the full Vitest integration suite against real PostgreSQL:
+- `tests/concurrency.test.ts` (Atomic claim race condition + optimistic version CAS)
+- `tests/idempotency.test.ts` (Duplicate request replay + payload tampering check)
+- `tests/workflow.test.ts` (Illegal jumps + member approval block + Four-Eyes rule + lead approval)
+- `tests/rbac.test.ts` (404 isolation across teams + viewer mutation block)
+
+**Result**: 10/10 tests pass in ~1.8 seconds.
+
+---
+
+## Documentation Index
+
+- [Architecture & Decisions](ENGINEERING_DECISIONS.md) — Deep dive into concurrency, outbox, and RBAC trade-offs.
+- [Known Limitations & Roadmap](KNOWN_LIMITATIONS.md) — Production limits and enterprise scaling considerations.
