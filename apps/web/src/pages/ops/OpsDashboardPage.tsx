@@ -49,11 +49,12 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [activeView, setActiveView] = useState<'all' | 'assigned_to_me' | 'unassigned_urgent' | 'awaiting_approval'>('all');
+  const [activeView, setActiveView] = useState<'all' | 'assigned_to_me' | 'unassigned_urgent' | 'awaiting_approval' | 'breached_sla'>('all');
   const [teamFilter, setTeamFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [slaBreachedOnly, setSlaBreachedOnly] = useState<boolean>(false);
+  const [scanningSla, setScanningSla] = useState(false);
 
   // Keyset Cursor Pagination
   const [page, setPage] = useState(1);
@@ -69,6 +70,29 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
   // Live Auto-Refresh
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  // Deep-linking: listen for URL ?item=ID parameter
+  useEffect(() => {
+    const checkUrlItem = () => {
+      const params = new URLSearchParams(window.location.search);
+      const itemId = params.get('item');
+      if (itemId) {
+        setSelectedItemId(itemId);
+      }
+    };
+    checkUrlItem();
+    window.addEventListener('popstate', checkUrlItem);
+    return () => window.removeEventListener('popstate', checkUrlItem);
+  }, []);
+
+  const handleCloseDrawer = () => {
+    setSelectedItemId(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('item')) {
+      url.searchParams.delete('item');
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
   // Load teams once
   useEffect(() => {
     api.listTeams().then(setTeams).catch(console.error);
@@ -80,11 +104,11 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
       const [kpiData, itemsData] = await Promise.all([
         api.getKpis(),
         api.listWorkItems({
-          view: activeView,
+          view: activeView === 'breached_sla' ? undefined : activeView,
           teamId: teamFilter || undefined,
           status: (statusFilter as any) || undefined,
           priority: (priorityFilter as any) || undefined,
-          slaBreached: slaBreachedOnly ? true : undefined,
+          slaBreached: activeView === 'breached_sla' || slaBreachedOnly ? true : undefined,
           q: searchQuery || undefined,
           cursor,
           limit: 15,
@@ -98,6 +122,21 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
       console.error('Failed to load dashboard data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScanSlas = async () => {
+    try {
+      setScanningSla(true);
+      const res = await api.scanSlas();
+      toast.success(
+        `⚡ SLA Audit Complete: ${res.breachedCount} item${res.breachedCount === 1 ? '' : 's'} marked as Breached!`
+      );
+      await fetchDashboardData(currentCursor);
+    } catch (err: any) {
+      toast.error(`SLA scan failed: ${err.message || 'Server error'}`);
+    } finally {
+      setScanningSla(false);
     }
   };
 
@@ -236,6 +275,30 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
             {autoRefresh ? 'Live Sync (12s)' : 'Sync Paused'}
           </button>
 
+          {/* SLA Scan Trigger Button */}
+          <button
+            onClick={handleScanSlas}
+            disabled={scanningSla}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              borderRadius: '10px',
+              background: '#fff1f2',
+              border: '1px solid #fecdd3',
+              color: '#be123c',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: scanningSla ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title="Execute immediate deterministic SLA breach scan across all open tickets"
+          >
+            <Zap size={14} className={scanningSla ? 'animate-spin' : ''} />
+            {scanningSla ? 'Scanning SLAs...' : '⚡ Audit SLAs Now'}
+          </button>
+
           <button className="btn-secondary" onClick={() => fetchDashboardData(currentCursor)}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
@@ -345,6 +408,13 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                 onClick={() => setActiveView('awaiting_approval')}
               >
                 Awaiting Approval ({kpis.awaitingApproval})
+              </button>
+              <button
+                className={`segment-btn ${activeView === 'breached_sla' ? 'active' : ''}`}
+                onClick={() => setActiveView('breached_sla')}
+                style={activeView === 'breached_sla' ? { background: '#fef2f2', color: '#dc2626', borderColor: '#fca5a5' } : {}}
+              >
+                🚨 Breached SLAs ({kpis.slaBreached || 0})
               </button>
             </div>
 
@@ -691,7 +761,7 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
       {selectedItemId && (
         <WorkItemDetailPage
           itemId={selectedItemId}
-          onClose={() => setSelectedItemId(null)}
+          onClose={handleCloseDrawer}
           onItemUpdated={() => fetchDashboardData(currentCursor)}
           onConflict={(err) => setConflictError(err)}
         />

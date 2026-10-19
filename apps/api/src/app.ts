@@ -10,6 +10,7 @@ import { workItemsRouter } from './modules/work-items/work-items.router';
 import { teamsRouter } from './modules/teams/teams.router';
 import { usersRouter } from './modules/users/users.router';
 import { settingsRouter } from './modules/settings/settings.router';
+import { notificationsRouter } from './modules/notifications/notifications.router';
 import { prisma } from './shared/database';
 import { redisManager } from './shared/redis';
 
@@ -86,6 +87,8 @@ export function createApp() {
   app.use(`${prefix}/items`, workItemsRouter);
   app.use(`${prefix}/teams`, teamsRouter);
   app.use(`${prefix}/users`, usersRouter);
+  app.use(`${prefix}/settings`, settingsRouter);
+  app.use(`${prefix}/notifications`, notificationsRouter);
   // Optional static frontend serve if built dist exists (for Docker & unified container)
   const webDistPath = path.resolve(process.cwd(), 'apps/web/dist');
   try {

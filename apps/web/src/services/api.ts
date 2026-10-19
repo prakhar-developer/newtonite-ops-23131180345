@@ -154,4 +154,18 @@ export const api = {
     request<any>(`/settings/outbox/retry/${jobId}`, {
       method: 'POST',
     }),
+
+  // In-App Notification Center
+  getNotifications: () => request<{ unreadCount: number; notifications: any[] }>('/notifications'),
+  markNotificationsRead: (id?: string) =>
+    request<any>('/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify(id ? { id } : {}),
+    }),
+
+  // SLA Scan & Auto-Escalation Engine
+  scanSlas: () =>
+    request<{ breachedCount: number }>('/items/sla/scan', {
+      method: 'POST',
+    }),
 };

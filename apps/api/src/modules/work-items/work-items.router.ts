@@ -11,10 +11,27 @@ import {
 } from '@instos/shared';
 import { authMiddleware } from '../../middleware/auth';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
+import { slaService } from '../../services/sla.service';
 
 export const workItemsRouter = Router();
 
 workItemsRouter.use(authMiddleware);
+
+/**
+ * Trigger immediate deterministic SLA breach scan and auto-escalation
+ */
+workItemsRouter.post('/sla/scan', async (_req, res, next) => {
+  try {
+    const result = await slaService.scanAndEscalate();
+    res.json({
+      success: true,
+      data: result,
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * Dashboard KPIs
