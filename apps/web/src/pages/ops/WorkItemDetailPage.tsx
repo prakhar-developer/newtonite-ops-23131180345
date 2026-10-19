@@ -280,16 +280,10 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
               <form onSubmit={handleTransition} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <select
+                    className="instos-select"
                     value={targetStatus}
                     onChange={(e) => setTargetStatus(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-light)',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
                     required
                   >
                     <option value="">Select Target Status...</option>
@@ -305,16 +299,11 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
                 </div>
                 <input
                   type="text"
+                  className="instos-input"
                   placeholder="Reason / resolution note (optional)..."
                   value={transitionReason}
                   onChange={(e) => setTransitionReason(e.target.value)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-light)',
-                    fontSize: '13px',
-                    outline: 'none',
-                  }}
+                  style={{ padding: '8px 12px', fontSize: '13px' }}
                 />
               </form>
             </div>
@@ -396,19 +385,12 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
               {/* Add Comment Form */}
               <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <textarea
+                  className="instos-textarea"
                   rows={3}
                   placeholder={isInternal ? 'Type private internal note (hidden from customer)...' : 'Type public reply to customer...'}
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-light)',
-                    fontSize: '13px',
-                    outline: 'none',
-                    resize: 'none',
-                  }}
+                  style={{ minHeight: '80px' }}
                   required
                 />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -417,7 +399,7 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
                       type="checkbox"
                       checked={isInternal}
                       onChange={(e) => setIsInternal(e.target.checked)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', accentColor: '#4f46e5' }}
                     />
                     <span>Internal Note (Only operators see this)</span>
                   </label>

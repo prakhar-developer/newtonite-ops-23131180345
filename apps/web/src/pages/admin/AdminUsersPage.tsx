@@ -144,7 +144,8 @@ export const AdminUsersPage: React.FC = () => {
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <select
                       id={`team-${u.id}`}
-                      style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px' }}
+                      className="instos-select"
+                      style={{ padding: '6px 28px 6px 10px', fontSize: '11px', width: 'auto' }}
                     >
                       {teams.map((t) => (
                         <option key={t.id} value={t.id}>
@@ -155,7 +156,8 @@ export const AdminUsersPage: React.FC = () => {
 
                     <select
                       id={`role-${u.id}`}
-                      style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px' }}
+                      className="instos-select"
+                      style={{ padding: '6px 28px 6px 10px', fontSize: '11px', width: 'auto' }}
                     >
                       <option value="VIEWER">Viewer</option>
                       <option value="MEMBER">Member</option>
@@ -165,7 +167,7 @@ export const AdminUsersPage: React.FC = () => {
 
                     <button
                       className="btn-secondary"
-                      style={{ padding: '5px 10px', fontSize: '11px' }}
+                      style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 600 }}
                       onClick={() => {
                         const tId = (document.getElementById(`team-${u.id}`) as HTMLSelectElement).value;
                         const r = (document.getElementById(`role-${u.id}`) as HTMLSelectElement).value;
@@ -188,13 +190,13 @@ export const AdminUsersPage: React.FC = () => {
           <div
             className="card"
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '440px', padding: '28px', margin: 'auto' }}
+            style={{ width: '460px', padding: '32px', margin: 'auto', boxShadow: 'var(--shadow-modal)' }}
           >
-            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '16px' }}>Add Operator Account</h3>
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                  Full Name *
+            <h3 style={{ fontSize: '19px', fontWeight: 800, marginBottom: '18px' }}>Add Operator Account</h3>
+            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">
+                  Full Name <span className="required-badge">*</span>
                 </label>
                 <input
                   type="text"
@@ -206,9 +208,9 @@ export const AdminUsersPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                  Work Email *
+              <div className="form-group">
+                <label className="form-label">
+                  Work Email <span className="required-badge">*</span>
                 </label>
                 <input
                   type="email"
@@ -220,9 +222,9 @@ export const AdminUsersPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                  Initial Password
+              <div className="form-group">
+                <label className="form-label">
+                  Initial Password <span className="required-badge">*</span>
                 </label>
                 <input
                   type="password"
@@ -233,8 +235,8 @@ export const AdminUsersPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+              <div className="form-group">
+                <label className="form-label">
                   System Role
                 </label>
                 <select

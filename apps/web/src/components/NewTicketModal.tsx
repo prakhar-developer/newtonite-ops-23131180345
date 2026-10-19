@@ -77,10 +77,10 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-              Designated Team *
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">
+              Designated Team <span className="required-badge">*</span>
             </label>
             <select
               className="instos-select"
@@ -96,10 +96,10 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                Item Type *
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Item Type <span className="required-badge">*</span>
               </label>
               <select className="instos-select" value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="INCIDENT">Incident</option>
@@ -109,9 +109,9 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 <option value="TASK">Operational Task</option>
               </select>
             </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                Priority *
+            <div className="form-group">
+              <label className="form-label">
+                Priority <span className="required-badge">*</span>
               </label>
               <select className="instos-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
                 <option value="LOW">Low (7 Days SLA)</option>
@@ -123,9 +123,9 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-              Title / Summary *
+          <div className="form-group">
+            <label className="form-label">
+              Title / Summary <span className="required-badge">*</span>
             </label>
             <input
               type="text"
@@ -137,8 +137,8 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             />
           </div>
 
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+          <div className="form-group">
+            <label className="form-label">
               Description & Context
             </label>
             <textarea

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Shield, ArrowRight, Lock, Mail } from 'lucide-react';
+import { Layers, Shield, ArrowRight, Lock, Mail, ExternalLink, Sparkles } from 'lucide-react';
 import { useAuth, DEMO_PERSONAS } from '../../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -31,16 +31,16 @@ export const LoginPage: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '32px 16px',
+        padding: '40px 16px',
       }}
     >
-      <div style={{ maxWidth: '440px', width: '100%' }}>
+      <div style={{ maxWidth: '460px', width: '100%' }}>
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div
             style={{
-              width: '52px',
-              height: '52px',
+              width: '54px',
+              height: '54px',
               borderRadius: '14px',
               background: '#0f172a',
               display: 'inline-flex',
@@ -48,68 +48,81 @@ export const LoginPage: React.FC = () => {
               justifyContent: 'center',
               color: '#ffffff',
               boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)',
-              marginBottom: '12px',
+              marginBottom: '14px',
             }}
           >
             <Layers size={28} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>
             instOS Operations
           </h1>
-          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
-            Sign in to access your team's operational command center
+          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>
+            Sign in to access your cross-team operational command center
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="card" style={{ padding: '32px', marginBottom: '24px' }}>
+        <div
+          className="card"
+          style={{
+            padding: '36px',
+            marginBottom: '20px',
+            boxShadow: '0 15px 35px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8)',
+          }}
+        >
           {error && (
             <div
               style={{
-                padding: '10px 14px',
+                padding: '12px 14px',
                 borderRadius: '8px',
                 background: '#fee2e2',
+                border: '1px solid #fecaca',
                 color: '#dc2626',
                 fontSize: '13px',
-                marginBottom: '16px',
+                fontWeight: 600,
+                marginBottom: '18px',
               }}
             >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                Email Address
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Work Email Address <span className="required-badge">*</span>
               </label>
-              <div style={{ position: 'relative' }}>
+              <div className="input-with-icon">
+                <span className="icon-prefix">
+                  <Mail size={16} />
+                </span>
                 <input
                   type="email"
                   className="instos-input"
-                  style={{ paddingLeft: '36px' }}
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <Mail size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
               </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                Password
+            <div className="form-group">
+              <label className="form-label">
+                Password <span className="required-badge">*</span>
               </label>
-              <div style={{ position: 'relative' }}>
+              <div className="input-with-icon">
+                <span className="icon-prefix">
+                  <Lock size={16} />
+                </span>
                 <input
                   type="password"
                   className="instos-input"
-                  style={{ paddingLeft: '36px' }}
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <Lock size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
               </div>
             </div>
 
@@ -117,7 +130,15 @@ export const LoginPage: React.FC = () => {
               type="submit"
               disabled={loading}
               className="btn-primary"
-              style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '14px', marginTop: '6px' }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                justifyContent: 'center',
+                fontSize: '14.5px',
+                fontWeight: 700,
+                marginTop: '6px',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+              }}
             >
               {loading ? 'Authenticating...' : 'Sign In to Operations'}
             </button>
@@ -125,19 +146,30 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* 1-Click Fast Persona Login Cards (For Quick Evaluation) */}
-        <div className="card" style={{ padding: '20px' }}>
+        <div
+          className="card"
+          style={{
+            padding: '20px 22px',
+            marginBottom: '20px',
+            border: '1.5px solid #e0e7ff',
+            background: '#ffffff',
+          }}
+        >
           <div
             style={{
               fontSize: '11px',
-              fontWeight: 700,
-              color: '#64748b',
+              fontWeight: 800,
+              color: '#4f46e5',
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.06em',
               marginBottom: '12px',
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            ⚡ 1-Click Evaluation Personas (Pre-Seeded)
+            <Sparkles size={13} /> 1-Click Fast Persona Evaluation
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -150,7 +182,7 @@ export const LoginPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '8px 10px',
+                  padding: '9px 12px',
                   borderRadius: '8px',
                   border: '1px solid var(--border-light)',
                   background: 'var(--bg-subtle)',
@@ -158,18 +190,38 @@ export const LoginPage: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#4f46e5';
+                  e.currentTarget.style.background = '#eef2ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-light)';
+                  e.currentTarget.style.background = 'var(--bg-subtle)';
+                }}
               >
-                <img
-                  src={p.avatarUrl}
-                  alt=""
-                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
-                />
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {p.name.charAt(0)}
+                </div>
                 <div style={{ overflow: 'hidden' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {p.name.split(' ')[0]}
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                    {p.name}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#4f46e5', whiteSpace: 'nowrap' }}>
-                    {p.roleDescription.split(' ')[0]}
+                  <div style={{ fontSize: '10.5px', color: '#64748b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                    {p.role} · {p.team}
                   </div>
                 </div>
               </button>
@@ -177,13 +229,25 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Link to Customer Portal */}
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        {/* Customer Portal Link */}
+        <div style={{ textAlign: 'center' }}>
           <a
             href="/portal"
-            style={{ fontSize: '13px', fontWeight: 600, color: '#4f46e5', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: '#64748b',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#0f172a')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
           >
-            Open Public Customer Support Portal &rarr;
+            Are you a customer? Visit Support Portal &rarr;
           </a>
         </div>
       </div>

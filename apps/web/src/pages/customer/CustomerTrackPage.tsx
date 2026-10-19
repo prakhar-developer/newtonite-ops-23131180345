@@ -299,22 +299,19 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
                 </span>
               </div>
 
-              <input
-                type="text"
-                placeholder="Optional feedback / comments..."
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                style={{
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #86efac',
-                  fontSize: '13px',
-                  background: '#ffffff',
-                }}
-              />
+              <div className="form-group">
+                <input
+                  type="text"
+                  className="instos-input"
+                  placeholder="Optional feedback / comments..."
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  style={{ borderColor: '#86efac' }}
+                />
+              </div>
 
               <div>
-                <button type="submit" disabled={submittingCsat} className="btn-primary" style={{ background: '#16a34a' }}>
+                <button type="submit" disabled={submittingCsat} className="btn-primary" style={{ background: '#16a34a', padding: '10px 20px' }}>
                   {submittingCsat ? 'Confirming...' : 'Confirm Resolution & Close Ticket'}
                 </button>
               </div>
@@ -323,14 +320,14 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
         )}
 
         {/* Discussion / Conversation History */}
-        <div className="card" style={{ padding: '24px 28px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+        <div className="card" style={{ padding: '28px 32px' }}>
+          <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginBottom: '18px' }}>
             Updates & Discussion ({ticket.comments?.length || 0})
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
             {ticket.comments?.length === 0 ? (
-              <div style={{ fontSize: '13px', color: 'var(--text-subtle)', padding: '16px 0' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-subtle)', padding: '24px 0', textAlign: 'center' }}>
                 No messages yet. An operational agent will respond shortly.
               </div>
             ) : (
@@ -340,15 +337,16 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
                   <div
                     key={c.id}
                     style={{
-                      padding: '14px',
+                      padding: '14px 18px',
                       borderRadius: '12px',
-                      background: isCustomer ? 'var(--bg-subtle)' : '#eef2ff',
+                      background: isCustomer ? '#f8fafc' : '#eef2ff',
                       border: isCustomer ? '1px solid var(--border-light)' : '1px solid #c7d2fe',
                       maxWidth: '85%',
                       alignSelf: isCustomer ? 'flex-end' : 'flex-start',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '16px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 700, color: isCustomer ? 'var(--text-main)' : '#4338ca' }}>
                         {c.author?.name || c.customerAuthor?.name || 'Support Agent'}
                       </span>
@@ -356,7 +354,7 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
                         {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    <p style={{ fontSize: '13.5px', color: 'var(--text-main)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
                       {c.body}
                     </p>
                   </div>
@@ -367,23 +365,23 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
 
           {/* Customer Reply Form */}
           {ticket.status !== 'CLOSED' && (
-            <form onSubmit={handleSendReply} style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                placeholder="Type a message or provide more details..."
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-light)',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
-                required
-              />
-              <button type="submit" disabled={sendingReply} className="btn-primary" style={{ padding: '0 20px', flexShrink: 0 }}>
+            <form onSubmit={handleSendReply} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="text"
+                  className="instos-input"
+                  placeholder="Type a message or provide more details..."
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={sendingReply}
+                className="btn-primary"
+                style={{ padding: '10px 22px', flexShrink: 0, height: '42px' }}
+              >
                 <Send size={14} /> {sendingReply ? 'Sending...' : 'Reply'}
               </button>
             </form>

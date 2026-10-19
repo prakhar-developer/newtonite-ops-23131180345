@@ -102,9 +102,9 @@ export const AdminTeamsPage: React.FC = () => {
           >
             <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '16px' }}>Create Operational Team</h3>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                  Team Name *
+              <div className="form-group">
+                <label className="form-label">
+                  Team Name <span className="required-badge">*</span>
                 </label>
                 <input
                   type="text"
@@ -119,9 +119,9 @@ export const AdminTeamsPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
-                  Slug (Alphanumeric identifier) *
+              <div className="form-group">
+                <label className="form-label">
+                  Slug (Alphanumeric identifier) <span className="required-badge">*</span>
                 </label>
                 <input
                   type="text"
@@ -133,8 +133,8 @@ export const AdminTeamsPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+              <div className="form-group">
+                <label className="form-label">
                   Description
                 </label>
                 <textarea

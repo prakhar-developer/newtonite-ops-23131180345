@@ -355,3 +355,278 @@ button {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
+/* -------------------------------------------------------------
+   Comprehensive Form Inputs & Controls (StudioDen / ShipNova Style)
+   ------------------------------------------------------------- */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.02em;
+}
+
+.form-label .required-badge {
+  color: #ef4444;
+  margin-left: 3px;
+  font-size: 13px;
+}
+
+.form-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Base Form Controls */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+select,
+textarea,
+.instos-input,
+.instos-select,
+.instos-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--text-main);
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="search"]:hover,
+select:hover,
+textarea:hover,
+.instos-input:hover,
+.instos-select:hover,
+.instos-textarea:hover {
+  border-color: #94a3b8;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus,
+.instos-input:focus,
+.instos-select:focus,
+.instos-textarea:focus {
+  border-color: #4f46e5;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14), 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+}
+
+input::placeholder,
+textarea::placeholder,
+.instos-input::placeholder,
+.instos-textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled,
+.instos-input:disabled,
+.instos-select:disabled,
+.instos-textarea:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+/* Select Styling with Custom Chevron */
+select,
+.instos-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 42px;
+  cursor: pointer;
+}
+
+select:focus,
+.instos-select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Textarea Specific */
+textarea,
+.instos-textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+/* Icon Input Wrapper */
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-icon > .icon-prefix {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.input-with-icon > input {
+  padding-left: 42px !important;
+}
+
+/* Interactive Category Cards (Customer Portal) */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.category-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.category-card:hover {
+  border-color: #a5b4fc;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.category-card.active {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.category-card .icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+/* Priority Pills Bar */
+.priority-pills {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.priority-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.priority-pill:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.priority-pill.active {
+  border-color: #4f46e5;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.priority-pill .sla-tag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.priority-pill.active .sla-tag {
+  color: #94a3b8;
+}
+
+/* Star Rating Controls (CSAT) */
+.star-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.1s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+}
+
