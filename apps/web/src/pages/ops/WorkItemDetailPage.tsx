@@ -536,42 +536,8 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
                 )}
               </div>
 
-              {/* Add Comment Form with Macro Canned Responses */}
+              {/* Add Comment Form */}
               <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>⚡ Macro Presets:</span>
-                  {[
-                    { label: 'Refund Issued', text: 'The transaction charge has been reversed to your original payment method. Please allow 2-3 business days for bank settlement.', internal: false },
-                    { label: 'KYC Resubmission', text: 'Please upload a clear, uncropped copy of your government-issued ID with all 4 corners visible via your secure portal link.', internal: false },
-                    { label: 'Bug Patched', text: 'Our engineering team identified and deployed a patch for this issue. Caches have been purged and all services are operating nominally.', internal: false },
-                    { label: 'Internal Escalation', text: 'Triaged as high impact. Transaction logs inspected in Datadog; escalated to Core Platform Engineering on-call.', internal: true },
-                  ].map((macro) => (
-                    <button
-                      key={macro.label}
-                      type="button"
-                      onClick={() => {
-                        setCommentBody(macro.text);
-                        setIsInternal(macro.internal);
-                      }}
-                      style={{
-                        padding: '3px 8px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        borderRadius: '6px',
-                        background: '#f1f5f9',
-                        border: '1px solid #cbd5e1',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        transition: 'background 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e2e8f0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f1f5f9')}
-                    >
-                      + {macro.label}
-                    </button>
-                  ))}
-                </div>
-
                 <textarea
                   className="instos-textarea"
                   rows={3}

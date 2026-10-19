@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layers, Shield, ArrowRight, Lock, Mail, ExternalLink, Sparkles } from 'lucide-react';
 import { useAuth, DEMO_PERSONAS } from '../../context/AuthContext';
 
-export const LoginPage: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
+export const LoginPage: React.FC = () => {
   const { login, switchPersona } = useAuth();
   const [email, setEmail] = useState('admin@instos.dev');
   const [password, setPassword] = useState('password123');
@@ -35,29 +35,6 @@ export const LoginPage: React.FC<{ onBackToLanding?: () => void }> = ({ onBackTo
       }}
     >
       <div style={{ maxWidth: '460px', width: '100%' }}>
-        {onBackToLanding && (
-          <div style={{ marginBottom: '16px' }}>
-            <button
-              onClick={onBackToLanding}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 8px',
-                borderRadius: '6px',
-              }}
-            >
-              &larr; Back to Product Overview
-            </button>
-          </div>
-        )}
-
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div

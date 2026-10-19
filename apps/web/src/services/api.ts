@@ -179,7 +179,4 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-
-  // Analytics & Operational Intelligence
-  getAnalyticsOverview: () => request<any>('/analytics/overview'),
 };
