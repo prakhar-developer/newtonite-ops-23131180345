@@ -66,6 +66,16 @@ Unlike conventional closed-loop tools that only serve internal back-offices, ins
 
 ---
 
+### 6. Operational Intelligence & SLA Compliance Hub (`/analytics`)
+*Executive telemetry dashboard tracking real-time Mean Time to Resolution (MTTR), 14-minute average first response, SLA compliance rates, 5-star CSAT distribution, category breakdown, and cross-functional team throughput leaderboards.*
+
+---
+
+### 7. Enterprise Platform Policies & Inbound Webhook Center (`/settings`)
+*Configurable operational response thresholds (P1: 4h, P2: 8h, P3: 24h, P4: 72h), inbound email webhook simulator (cURL generator for `support@inistnt.in`), and transactional outbox relay diagnostics.*
+
+---
+
 ## 🏛️ System Architecture
 
 ```mermaid

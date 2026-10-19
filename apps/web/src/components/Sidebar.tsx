@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  BarChart3,
+  Sliders,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,7 +25,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
 
   const menuItems = [
     { id: 'ops', label: 'Operations Desk', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Analytics & SLA Hub', icon: BarChart3 },
     { id: 'approvals', label: 'Approval Gate', icon: CheckSquare },
+    { id: 'settings', label: 'Platform & SLAs', icon: Sliders },
     { id: 'portal', label: 'Customer Portal', icon: LifeBuoy, isExternal: true },
     ...(isSuperAdmin
       ? [

@@ -12,6 +12,8 @@ import {
   ExternalLink,
   UserCheck,
   X,
+  BarChart3,
+  Sliders,
 } from 'lucide-react';
 import { useAuth, DEMO_PERSONAS } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -284,7 +286,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
             {[
               { id: 'ops', label: 'Operations Command Center', icon: Layers },
+              { id: 'analytics', label: 'Analytics & SLA Hub', icon: BarChart3 },
               { id: 'approvals', label: 'Lead Approvals Gate', icon: Clock },
+              { id: 'settings', label: 'Platform Settings & SLAs', icon: Sliders },
               { id: 'teams', label: 'Teams & Access Boundaries', icon: Shield },
               { id: 'users', label: 'User Governance & Roles', icon: Users },
               { id: 'outbox', label: 'Transactional Outbox Monitor', icon: Database },

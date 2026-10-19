@@ -13,6 +13,7 @@ import { settingsRouter } from './modules/settings/settings.router';
 import { notificationsRouter } from './modules/notifications/notifications.router';
 import { eventsRouter } from './modules/events/events.router';
 import { webhooksRouter } from './modules/webhooks/webhooks.router';
+import { analyticsRouter } from './modules/analytics/analytics.router';
 import { prisma } from './shared/database';
 import { redisManager } from './shared/redis';
 
@@ -93,6 +94,7 @@ export function createApp() {
   app.use(`${prefix}/notifications`, notificationsRouter);
   app.use(`${prefix}/events`, eventsRouter);
   app.use(`${prefix}/webhooks`, webhooksRouter);
+  app.use(`${prefix}/analytics`, analyticsRouter);
   // Optional static frontend serve if built dist exists (for Docker & unified container)
   const webDistPath = path.resolve(process.cwd(), 'apps/web/dist');
   try {
