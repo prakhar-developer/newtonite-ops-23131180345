@@ -9,6 +9,16 @@ Unlike conventional closed-loop tools that only serve internal back-offices, ins
 
 ---
 
+## 🚀 Product Launch & Overview Video
+
+> **24s High-Impact Product Launch Video**  
+> *Motion graphics, beat-synced audio cues, and story breakdown created with the [latent-spaces/brag](https://github.com/latent-spaces/brag) launch video framework.*  
+> 🔊 **High-Definition Video with Stereo Audio Track**: [Download & Watch `instos_launch_brag.mp4`](docs/assets/instos_launch_brag.mp4)
+
+![instOS Product Launch Video](docs/assets/instos_launch_brag.webp)
+
+---
+
 ## 🎥 Live Interactive Walkthrough
 
 ![instOS Live Walkthrough](docs/assets/demo_recording.webp)
