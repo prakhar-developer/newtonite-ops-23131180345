@@ -28,7 +28,8 @@ ENV HOST=0.0.0.0
 COPY package*.json ./
 RUN npm install --omit=dev
 
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
 COPY --from=builder /app/prisma ./prisma

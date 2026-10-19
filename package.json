@@ -13,6 +13,7 @@
     "build:widget": "vite build apps/widget",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "start": "node apps/api/dist/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
