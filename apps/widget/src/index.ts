@@ -8,11 +8,11 @@
   const apiUrl =
     currentScript?.getAttribute('data-api-url') ||
     (window as unknown as { instOS_API_URL?: string }).instOS_API_URL ||
-    'http://localhost:4000/api/v1';
+    'https://newtonite-ops-23131180345-production.up.railway.app/api/v1';
   const portalUrl = (
     currentScript?.getAttribute('data-portal-url') ||
     (window as unknown as { instOS_PORTAL_URL?: string }).instOS_PORTAL_URL ||
-    'http://localhost:5173'
+    'https://instos.inistnt.in'
   ).replace(/\/$/, '');
   const defaultTeam = currentScript?.getAttribute('data-team') || 'support';
 

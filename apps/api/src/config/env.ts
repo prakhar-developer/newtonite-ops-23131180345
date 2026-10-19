@@ -22,7 +22,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
   
   // Frontend URL for email tracking links
-  FRONTEND_URL: z.string().default('http://localhost:5173'),
+  FRONTEND_URL: z.string().default('https://instos.inistnt.in'),
 
   // Resend Free Tier
   RESEND_API_KEY: z.string().optional().default(''),
