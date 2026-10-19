@@ -24,6 +24,7 @@ import {
   BadRequestError,
 } from '../../shared/errors';
 import { slaService } from '../../services/sla.service';
+import { sseService } from '../../services/sse.service';
 
 export interface WorkItemListQuery {
   view?: 'all' | 'assigned_to_me' | 'unassigned_urgent' | 'awaiting_approval';
@@ -326,6 +327,14 @@ export class WorkItemsService {
       });
     });
 
+    sseService.broadcast('WORK_ITEM_UPDATED', {
+      action: 'CLAIMED',
+      workItemId: updated.id,
+      title: updated.title,
+      assigneeName: user.name,
+      status: updated.status,
+    });
+
     return updated;
   }
 
@@ -626,6 +635,78 @@ export class WorkItemsService {
       activeCustomers,
       avgCsat: Number((csatAgg._avg.csatRating || 4.7).toFixed(1)),
     };
+  }
+
+  /**
+   * Bulk Operations: Batch status changes, reassignments, or escalations with ACID guarantees
+   */
+  async bulkUpdateWorkItems(
+    user: AuthenticatedUser,
+    input: {
+      itemIds: string[];
+      action: 'assign' | 'status' | 'priority';
+      payload: { assigneeId?: string; status?: WorkItemStatus; priority?: Priority };
+    }
+  ) {
+    if (!input.itemIds || input.itemIds.length === 0) {
+      throw new BadRequestError('itemIds must be a non-empty array');
+    }
+
+    // Verify user authorization on all items
+    for (const id of input.itemIds) {
+      const { userRole } = await getAccessibleWorkItemOrThrow(user, id);
+      if (!hasMinimumRole(userRole, TeamRole.MEMBER)) {
+        throw new ForbiddenError(`Insufficient permissions for work item ${id}`);
+      }
+    }
+
+    const updatedItems = await prisma.$transaction(async (tx) => {
+      const results: any[] = [];
+      for (const id of input.itemIds) {
+        const updateData: any = { version: { increment: 1 } };
+        let action = ActivityAction.UPDATED;
+
+        if (input.action === 'assign' && input.payload.assigneeId !== undefined) {
+          updateData.assigneeId = input.payload.assigneeId || null;
+          action = ActivityAction.ASSIGNED;
+        } else if (input.action === 'status' && input.payload.status !== undefined) {
+          updateData.status = input.payload.status;
+          action = ActivityAction.STATUS_CHANGED;
+        } else if (input.action === 'priority' && input.payload.priority !== undefined) {
+          updateData.priority = input.payload.priority;
+          updateData.slaDeadline = slaService.calculateSlaDeadline(input.payload.priority);
+          action = ActivityAction.PRIORITY_CHANGED;
+        }
+
+        const updated = await tx.workItem.update({
+          where: { id },
+          data: updateData,
+          include: { team: true, assignee: true },
+        });
+
+        await tx.activityEvent.create({
+          data: {
+            workItemId: id,
+            actorId: user.id,
+            action,
+            newState: updateData,
+            metadata: { bulk: true, totalBatch: input.itemIds.length },
+          },
+        });
+
+        results.push(updated);
+      }
+      return results;
+    });
+
+    // Real-Time Multiplayer SSE Broadcast
+    sseService.broadcast('WORK_ITEMS_BULK_UPDATED', {
+      action: input.action,
+      count: updatedItems.length,
+      actorName: user.name,
+    });
+
+    return { updatedCount: updatedItems.length };
   }
 }
 

@@ -94,10 +94,99 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
     }
   };
 
-  // Load teams once
+  // Bulk Selection & Triage
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [users, setUsers] = useState<any[]>([]);
+  const [bulkExecuting, setBulkExecuting] = useState(false);
+
+  // Load teams and users once
   useEffect(() => {
     api.listTeams().then(setTeams).catch(console.error);
+    api.listUsers().then(setUsers).catch(console.error);
   }, []);
+
+  // Real-Time Server-Sent Events (SSE) Live Multiplayer Connection
+  useEffect(() => {
+    const token = localStorage.getItem('instos_token');
+    const apiBase = (import.meta.env.VITE_API_URL as string)?.replace(/\/$/, '') || '/api/v1';
+    const sseUrl = `${apiBase}/events/stream${token ? `?token=${token}` : ''}`;
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(sseUrl);
+
+      es.addEventListener('WORK_ITEM_UPDATED', (e: any) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.action === 'CLAIMED') {
+            toast.info(`⚡ Live Multiplayer: Item was claimed by ${data.assigneeName}`);
+          }
+          fetchDashboardData(currentCursor);
+        } catch {}
+      });
+
+      es.addEventListener('WORK_ITEM_CREATED', (e: any) => {
+        try {
+          const data = JSON.parse(e.data);
+          toast.success(`🎫 Inbound Ticket #${data.ticketNumber}: ${data.title}`);
+          fetchDashboardData(currentCursor);
+        } catch {}
+      });
+
+      es.addEventListener('WORK_ITEMS_BULK_UPDATED', (e: any) => {
+        try {
+          const data = JSON.parse(e.data);
+          toast.info(`📦 Bulk triage executed by ${data.actorName} (${data.count} items)`);
+          fetchDashboardData(currentCursor);
+        } catch {}
+      });
+    } catch {
+      // Fallback
+    }
+
+    return () => {
+      if (es) es.close();
+    };
+  }, [currentCursor]);
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItemIds.size === items.length) {
+      setSelectedItemIds(new Set());
+    } else {
+      setSelectedItemIds(new Set(items.map((i) => i.id)));
+    }
+  };
+
+  const handleBulkAction = async (action: 'assign' | 'status' | 'priority', payload: any) => {
+    if (selectedItemIds.size === 0) return;
+    try {
+      setBulkExecuting(true);
+      const res = await api.bulkUpdateItems({
+        itemIds: Array.from(selectedItemIds),
+        action,
+        payload,
+      });
+      toast.success(`✅ Bulk updated ${res.updatedCount} work items.`);
+      setSelectedItemIds(new Set());
+      await fetchDashboardData(currentCursor);
+    } catch (err: any) {
+      toast.error(`Bulk operation failed: ${err.message || 'Error'}`);
+    } finally {
+      setBulkExecuting(false);
+    }
+  };
 
   const fetchDashboardData = async (cursor?: string) => {
     try {
@@ -592,6 +681,15 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
             <table className="data-table">
               <thead>
                 <tr>
+                  <th style={{ width: '38px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={items.length > 0 && selectedItemIds.size === items.length}
+                      onChange={toggleSelectAll}
+                      style={{ cursor: 'pointer', accentColor: '#4f46e5' }}
+                      title="Select all items on this page"
+                    />
+                  </th>
                   <th>Item / Customer</th>
                   <th>Team</th>
                   <th>Priority</th>
@@ -604,14 +702,27 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-subtle)' }}>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-subtle)' }}>
                       No operational work items match the current filter criteria.
                     </td>
                   </tr>
                 ) : (
                   items.map((item) => (
-                    <tr key={item.id} onClick={() => setSelectedItemId(item.id)}>
-                      <td>
+                    <tr
+                      key={item.id}
+                      style={{
+                        backgroundColor: selectedItemIds.has(item.id) ? '#f8faff' : undefined,
+                      }}
+                    >
+                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedItemIds.has(item.id)}
+                          onChange={() => toggleSelectItem(item.id)}
+                          style={{ cursor: 'pointer', accentColor: '#4f46e5' }}
+                        />
+                      </td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '3px' }}>
                           {item.title}
                         </div>
@@ -629,18 +740,18 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                           )}
                         </div>
                       </td>
-                      <td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
                           {item.team?.name}
                         </span>
                       </td>
-                      <td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         <PriorityBadge priority={item.priority} />
                       </td>
-                      <td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         <StatusBadge status={item.status} />
                       </td>
-                      <td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         {item.assignee ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <img
@@ -656,7 +767,7 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                           </span>
                         )}
                       </td>
-                      <td>
+                      <td onClick={() => setSelectedItemId(item.id)} style={{ cursor: 'pointer' }}>
                         {item.slaBreached ? (
                           <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                             <ShieldAlert size={11} /> BREACHED
@@ -690,7 +801,10 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                             <Zap size={12} /> Claim
                           </button>
                         ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-subtle)', fontWeight: 600 }}>
+                          <span
+                            onClick={() => setSelectedItemId(item.id)}
+                            style={{ fontSize: '12px', color: 'var(--text-subtle)', fontWeight: 600, cursor: 'pointer' }}
+                          >
                             View &rarr;
                           </span>
                         )}
@@ -701,6 +815,119 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Floating Bulk Triage Action Bar */}
+          {selectedItemIds.size > 0 && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '12px 18px',
+                borderRadius: '12px',
+                background: '#0f172a',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)',
+                flexWrap: 'wrap',
+                gap: '12px',
+                animation: 'slideUp 0.2s ease-out',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8' }}>
+                  📦 {selectedItemIds.size} {selectedItemIds.size === 1 ? 'item' : 'items'} selected
+                </span>
+                <span style={{ color: '#475569' }}>|</span>
+
+                {/* Bulk Assign */}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) handleBulkAction('assign', { assigneeId: e.target.value });
+                  }}
+                  defaultValue=""
+                  disabled={bulkExecuting}
+                  style={{
+                    background: '#1e293b',
+                    color: '#ffffff',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" disabled>Bulk Assign to...</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+
+                {/* Bulk Status */}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) handleBulkAction('status', { status: e.target.value });
+                  }}
+                  defaultValue=""
+                  disabled={bulkExecuting}
+                  style={{
+                    background: '#1e293b',
+                    color: '#ffffff',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" disabled>Change Status to...</option>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="AWAITING_APPROVAL">Awaiting Approval</option>
+                  <option value="RESOLVED">Resolved</option>
+                </select>
+
+                {/* Bulk Priority */}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) handleBulkAction('priority', { priority: e.target.value });
+                  }}
+                  defaultValue=""
+                  disabled={bulkExecuting}
+                  style={{
+                    background: '#1e293b',
+                    color: '#ffffff',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" disabled>Escalate Priority to...</option>
+                  <option value="CRITICAL">Critical (2h SLA)</option>
+                  <option value="URGENT">Urgent (6h SLA)</option>
+                  <option value="HIGH">High (24h SLA)</option>
+                  <option value="MEDIUM">Medium (72h SLA)</option>
+                </select>
+              </div>
+
+              <button
+                onClick={() => setSelectedItemIds(new Set())}
+                style={{
+                  background: 'none',
+                  border: '1px solid #475569',
+                  color: '#94a3b8',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Deselect All
+              </button>
+            </div>
+          )}
 
           {/* Keyset Cursor Pagination Footer Bar */}
           <div

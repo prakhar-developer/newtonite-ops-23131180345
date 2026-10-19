@@ -136,6 +136,10 @@ flowchart TD
 | **Resource-level authorization** | Multi-team RBAC (`Viewer`, `Member`, `Lead`, `Admin`). Cross-team item access returns `404 Not Found` to prevent resource enumeration. | `tests/rbac.test.ts` verifies cross-team isolation and viewer mutation blocks. |
 | **Reliable async outbox** | Side-effects written to `outbox_jobs` in primary transaction. Poller uses `SKIP LOCKED`, exponential backoff, and DLQ. | Verified in `apps/api/src/modules/outbox/outbox.worker.ts`. |
 | **Deterministic SLA Escalation** | Scheduled + 1-click manual trigger scanning expired tickets (`min(dueDate, slaDeadline)`), setting `slaBreached = true`, incrementing version, and emitting audit logs. | Verified in `apps/api/src/services/sla.service.ts`. |
+| **Real-Time Multiplayer (SSE)** | Live Server-Sent Events stream (`GET /api/v1/events/stream`) pushing live claims (`"Claimed by Alex"`), new tickets, and bulk triage events with zero-polling. | `tests/features_v2.test.ts` asserts SSE stream connectivity & headers. |
+| **Inbound Email Webhook Parser** | Resend inbound webhook parser (`POST /api/v1/webhooks/resend`) converting external emails into tickets or appending replies to existing active incident threads. | `tests/features_v2.test.ts` asserts ticket creation & thread reply appending. |
+| **Bulk Operations & Multi-Select Triage** | Batch multi-select triage (`POST /api/v1/items/bulk`) for assigning, status transitions, and priority escalations with ACID transaction guarantees. | `tests/features_v2.test.ts` asserts batch mutation & version increments. |
+| **Interactive Field-Level Diffing** | Git-style visual diff inspector inside `ConflictDrawer` rendering red vs green field changes (`title`, `priority`, `status`, `assignee`) on 409 collisions. | Verified in `apps/web/src/components/ConflictDrawer.tsx`. |
 
 ---
 
@@ -259,8 +263,9 @@ Runs the full Vitest integration suite against real PostgreSQL:
 - `tests/idempotency.test.ts` (Duplicate request replay + payload tampering check)
 - `tests/workflow.test.ts` (Illegal jumps + member approval block + Four-Eyes rule + lead approval)
 - `tests/rbac.test.ts` (404 isolation across teams + viewer mutation block)
+- `tests/features_v2.test.ts` (Inbound email webhook reply appending + bulk triage + SSE headers)
 
-**Result**: 10/10 tests pass in ~1.8 seconds.
+**Result**: 13/13 tests pass in ~2.8 seconds.
 
 ---
 

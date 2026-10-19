@@ -34,6 +34,22 @@ workItemsRouter.post('/sla/scan', async (_req, res, next) => {
 });
 
 /**
+ * Bulk Operations: Batch status changes, reassignments, or escalations
+ */
+workItemsRouter.post('/bulk', async (req, res, next) => {
+  try {
+    const result = await workItemsService.bulkUpdateWorkItems(req.user!, req.body);
+    res.json({
+      success: true,
+      data: result,
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * Dashboard KPIs
  */
 workItemsRouter.get('/kpis', async (req, res, next) => {

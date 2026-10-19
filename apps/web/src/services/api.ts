@@ -168,4 +168,15 @@ export const api = {
     request<{ breachedCount: number }>('/items/sla/scan', {
       method: 'POST',
     }),
+
+  // Bulk Operations Triage
+  bulkUpdateItems: (data: {
+    itemIds: string[];
+    action: 'assign' | 'status' | 'priority';
+    payload: any;
+  }) =>
+    request<{ updatedCount: number }>('/items/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
