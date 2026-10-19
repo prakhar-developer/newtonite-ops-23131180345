@@ -181,7 +181,7 @@ export const LoginPage: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '10px',
                   padding: '9px 12px',
                   borderRadius: '8px',
                   border: '1px solid var(--border-light)',
@@ -189,6 +189,7 @@ export const LoginPage: React.FC = () => {
                   textAlign: 'left',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
+                  minWidth: 0,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#4f46e5';
@@ -199,29 +200,63 @@ export const LoginPage: React.FC = () => {
                   e.currentTarget.style.background = 'var(--bg-subtle)';
                 }}
               >
-                <div
+                <img
+                  src={p.avatarUrl}
+                  alt={p.name}
                   style={{
-                    width: '28px',
-                    height: '28px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
-                    background: '#0f172a',
-                    color: '#ffffff',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    objectFit: 'cover',
                     flexShrink: 0,
+                    border: '1.5px solid #cbd5e1',
                   }}
-                >
-                  {p.name.charAt(0)}
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                    }}
+                  >
                     {p.name}
                   </div>
-                  <div style={{ fontSize: '10.5px', color: '#64748b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    {p.role} · {p.team}
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: p.role.includes('Admin')
+                        ? '#4338ca'
+                        : p.role.includes('Lead')
+                        ? '#047857'
+                        : p.role.includes('Auditor')
+                        ? '#b45309'
+                        : '#0284c7',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      marginTop: '1px',
+                    }}
+                  >
+                    {p.role}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      color: '#64748b',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {p.team}
                   </div>
                 </div>
               </button>
