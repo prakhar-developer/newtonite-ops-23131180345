@@ -7,9 +7,22 @@ import { prisma } from './shared/database';
 
 const app = createApp();
 
-const server = app.listen(env.PORT, env.HOST, () => {
-  logger.info(`🚀 [instOS API] Server listening on http://${env.HOST}:${env.PORT}${env.API_PREFIX}`);
+const port = Number(process.env.PORT) || env.PORT || 4000;
+const host = '0.0.0.0';
+
+const server = app.listen(port, host, async () => {
+  logger.info(`🚀 [instOS API] Server listening on http://${host}:${port}${env.API_PREFIX}`);
   logger.info(`✨ [instOS API] Environment: ${env.NODE_ENV}`);
+  logger.info(`🔍 [instOS API] Health endpoint available at http://${host}:${port}/health`);
+
+  // Verify database connection smoothly without crashing port listener
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info('[Prisma] Database connection confirmed.');
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`[Prisma] Database connection warning: ${msg}. Please ensure DATABASE_URL is set in Railway.`);
+  }
 
   // Start background outbox worker
   outboxWorker.start();

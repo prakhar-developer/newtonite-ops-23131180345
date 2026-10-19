@@ -20,10 +20,7 @@ RUN npm run build:widget
 
 # Set production runtime environment
 ENV NODE_ENV=production
-ENV PORT=4000
 ENV HOST=0.0.0.0
 
-EXPOSE 4000
-
-# Start command ensures database schema is in sync and launches the server
+# Start command launches the server directly
 CMD ["npm", "start"]
