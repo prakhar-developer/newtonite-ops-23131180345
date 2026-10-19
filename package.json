@@ -22,7 +22,11 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "dependencies": {
+    "@instos/shared": "file:packages/shared",
     "@prisma/client": "^6.4.1",
     "@tanstack/react-query": "^5.66.0",
     "bcryptjs": "^2.4.3",
