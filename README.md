@@ -3,19 +3,25 @@
 > **Newtonite Software Engineering Challenge — Operations Under Pressure**  
 > High-Reliability Operations Engine & Public Ingestion Hub with Real Concurrency Controls
 
-instOS is a full-stack operational workflow platform designed for high-concurrency enterprise environments where teams coordinate mission-critical incidents, payment disputes, compliance flags, and customer requests. 
+instOS is a high-reliability, full-stack operational workflow platform engineered for volatile enterprise environments where teams coordinate mission-critical incidents, high-risk payment disputes, regulatory compliance flags, and customer escalations under heavy concurrency.
 
-Unlike conventional closed-loop tools, instOS features a **Dual-Surface Architecture**: an external **Customer Support Portal & Embeddable Widget** seamlessly integrated with an internal **Operator Command Center** equipped with race-condition proof claims, optimistic locking, server-enforced approval gates, and a reliable transactional outbox worker.
+Unlike conventional closed-loop tools that only serve internal back-offices, instOS features a **Dual-Surface Architecture**: a public **Customer Support Portal & Drop-in Embeddable Widget** integrated with an internal **Operator Command Center** equipped with race-condition proof claims, optimistic version locking, server-enforced approval gates, an autonomous SLA auto-escalation engine, and a reliable transactional outbox worker.
 
 ---
 
-## Live Deployments & Endpoints
+## 🎥 Live Interactive Walkthrough
+
+![instOS Live Walkthrough](docs/assets/demo_recording.webp)
+
+---
+
+## 🌐 Live Deployments & Endpoints
 
 | Environment | Live URL | Description |
 | :--- | :--- | :--- |
 | **Production Web App** | [https://instos.inistnt.in](https://instos.inistnt.in) | Complete React 18 + Vite frontend on custom domain |
 | **Customer Support Portal** | [https://instos.inistnt.in/portal](https://instos.inistnt.in/portal) | Public ticket submission, file upload & token tracking |
-| **Operator Command Desk** | [https://instos.inistnt.in/ops](https://instos.inistnt.in/ops) | ShipNova-style triage desk with 1-click role switcher |
+| **Operator Command Desk** | [https://instos.inistnt.in](https://instos.inistnt.in) | Enterprise dispatch desk with 1-click role switcher & notifications |
 | **Production API (Railway)** | [https://newtonite-ops-23131180345-production.up.railway.app](https://newtonite-ops-23131180345-production.up.railway.app) | Express + Prisma + PostgreSQL 16 backend |
 | **Live Health Check** | [https://newtonite-ops-23131180345-production.up.railway.app/health](https://newtonite-ops-23131180345-production.up.railway.app/health) | Reports status of DB, Redis, Resend & Cloudinary |
 | **Drop-in Embed Widget** | `https://instos.inistnt.in/widget.js` | Drop-in operational support script for any website |
@@ -23,21 +29,62 @@ Unlike conventional closed-loop tools, instOS features a **Dual-Surface Architec
 
 ---
 
-## Architecture Diagram
+## 📸 Product Tour & Core Capabilities
+
+### 1. Operator Command Center
+*Real-time operational dispatch desk featuring dynamic KPI cards, 5 instant quick-view preset pills, multi-dimensional team/status/priority filters, 1-click SLA Audit scan trigger, and RFC-4180 CSV export for compliance audits.*
+
+![Operations Dashboard](docs/assets/operations_dashboard.png)
+
+---
+
+### 2. In-App Notification Center (`Bell` Flyout)
+*Real-time aggregated notifications with unread badge counter, polling every 15s. Alerts operators of SLA breaches, lead approvals required, tickets assigned to them, and customer comments. Clicking any item deep-links directly via URL param `?item=id`.*
+
+![In-App Notifications Flyout](docs/assets/notifications_drawer.png)
+
+---
+
+### 3. 1-Click Role Switcher (Live RBAC Testing)
+*Allows reviewers and operators to seamlessly test permissions without logging out. Instantly switch between Super Admin (Alice Walker), Payments Lead (Marcus Brody), Support Member (James Wilson), and Read-Only Viewer (Victoria Vance).*
+
+![1-Click Role Switcher](docs/assets/role_switcher_dropdown.png)
+
+---
+
+### 4. Work Item Detail & Immutable Audit Timeline
+*Slide-out inspection drawer displaying live SLA target countdown, optimistic version locking, atomic claim action, dual-channel discussion (operator-only internal notes vs customer messages), and complete tamper-proof activity history.*
+
+![Work Item Detail Drawer](docs/assets/work_item_detail_drawer.png)
+
+---
+
+### 5. Public Customer Support Portal (`/portal`)
+*External customer-facing portal where end-users submit support requests, track ticket status in real-time via cryptographic tracking tokens, and submit CSAT star ratings (1-5) upon resolution.*
+
+![Customer Support Portal](docs/assets/customer_portal.png)
+
+---
+
+## 🏛️ System Architecture
 
 ```mermaid
 flowchart TD
     subgraph External["External Clients & Customer Hub"]
         Widget["Embeddable Widget (widget.js)"]
         Portal["Customer Support Portal (/portal)"]
-        Track["Live Request Tracking & CSAT"]
+        Track["Live Token Tracking & CSAT Rating"]
     end
 
-    subgraph InternalOps["Operator Command Center (/ops)"]
-        Dashboard["ShipNova-Style Dashboard"]
+    subgraph InternalOps["Operator Command Center"]
+        Dashboard["Operator Desk & KPI Banner"]
+        Palette["Spotlight Command Palette (⌘K)"]
+        Notifs["In-App Notification Center"]
+        RoleSwitch["1-Click Persona Switcher"]
         Claim["Atomic Claim (Race Proof)"]
         Approval["Lead Approval Gate (Four-Eyes)"]
         Notes["Internal Notes (Operator Only)"]
+        Export["RFC-4180 CSV Export"]
     end
 
     subgraph CoreAPI["Express + TypeScript Backend"]
@@ -51,9 +98,9 @@ flowchart TD
         DB[("PostgreSQL\n(work_items, tickets, customers,\nactivity_events, outbox_jobs)")]
     end
 
-    subgraph Daemons["Background Daemons"]
+    subgraph Daemons["Background Daemons & Cloud Services"]
         OutboxWorker["Outbox Worker (SKIP LOCKED)"]
-        SLAWorker["SLA Breach Escalation Scanner"]
+        SLAWorker["SLA Auto-Escalation Engine"]
         EmailService["Resend API (support@inistnt.in)"]
         StorageService["Cloudinary CDN"]
     end
@@ -62,9 +109,13 @@ flowchart TD
     Portal --> Gateway
     Track --> Gateway
     Dashboard --> Gateway
+    Palette --> Gateway
+    Notifs --> Gateway
+    RoleSwitch --> Gateway
     Claim --> Gateway
     Approval --> Gateway
     Notes --> Gateway
+    Export --> Gateway
 
     Gateway --> Idemp --> RBAC --> SM --> DB
     DB --> OutboxWorker --> EmailService
@@ -74,15 +125,29 @@ flowchart TD
 
 ---
 
-## Demo Personas & Evaluation Credentials
+## ⚡ Concurrency & Correctness Guarantees
 
-The application features a **1-Click Role Switcher** on the top navigation bar of the Operator Desk (`/ops`) and the login screen to test live authorization, team isolation, and approval gates instantly without typing credentials.
+| Pressure Scenario | Engineered Solution | Automated Test Verification |
+| :--- | :--- | :--- |
+| **Concurrent claims** | Atomic conditional update (`UPDATE work_items SET assigneeId = :user WHERE id = :id AND assigneeId IS NULL`). Colliding claim receives `409 Conflict`. | `tests/concurrency.test.ts` fires simultaneous claims; strictly 1 succeeds. |
+| **Stale version edits** | Optimistic locking on integer `version` field. Mismatch returns `409 Conflict` with latest server snapshot and triggers the frontend `ConflictDrawer` for visual reconciliation. | `tests/concurrency.test.ts` asserts stale edits are rejected with diff metadata. |
+| **Repeated requests (network retries, double-clicks)** | `Idempotency-Key` header with SHA-256 fingerprinting. Replays cached response with `Idempotent-Replay: true`. Tampered payload returns `409`. | `tests/idempotency.test.ts` verifies single creation on retries. |
+| **Workflow rules & Approval gate** | Server-enforced state machine (`OPEN -> IN_PROGRESS -> AWAITING_APPROVAL -> RESOLVED -> CLOSED`). Advancing to `RESOLVED` strictly requires `LEAD`/`ADMIN`, and assignee cannot approve own work (Four-Eyes rule). | `tests/workflow.test.ts` verifies invalid jumps and Four-Eyes rule. |
+| **Resource-level authorization** | Multi-team RBAC (`Viewer`, `Member`, `Lead`, `Admin`). Cross-team item access returns `404 Not Found` to prevent resource enumeration. | `tests/rbac.test.ts` verifies cross-team isolation and viewer mutation blocks. |
+| **Reliable async outbox** | Side-effects written to `outbox_jobs` in primary transaction. Poller uses `SKIP LOCKED`, exponential backoff, and DLQ. | Verified in `apps/api/src/modules/outbox/outbox.worker.ts`. |
+| **Deterministic SLA Escalation** | Scheduled + 1-click manual trigger scanning expired tickets (`min(dueDate, slaDeadline)`), setting `slaBreached = true`, incrementing version, and emitting audit logs. | Verified in `apps/api/src/services/sla.service.ts`. |
+
+---
+
+## 👥 Demo Personas & Evaluation Credentials
+
+The application features a **1-Click Role Switcher** in the top navigation bar of the Operator Desk and Spotlight Command Palette to test authorization and approval gates instantly without typing passwords.
 
 - **Master Password for all demo accounts**: `password123`
 
 | Persona | Email | System Role & Teams | Key Evaluation Capability |
 | :--- | :--- | :--- | :--- |
-| **Alice Walker** | `admin@instos.dev` | **Super Admin** (All Teams) | Team provisioning, user role assignments, Outbox inspection |
+| **Alice Walker** | `admin@instos.dev` | **Super Admin** (All Teams) | Global administration, team provisioning, Outbox inspection |
 | **Sarah Chen** | `lead.support@instos.dev` | **Support Lead** (Customer Support) | Review and approve transitions to Resolved (Four-Eyes gate) |
 | **James Wilson** | `member.support@instos.dev` | **Support Member** (Customer Support) | Claim unassigned items, triage customer tickets, resolve |
 | **Marcus Brody** | `lead.payments@instos.dev` | **Payments Lead** (Payments Ops) | High-risk settlement review, lead approval gate |
@@ -91,20 +156,7 @@ The application features a **1-Click Role Switcher** on the top navigation bar o
 
 ---
 
-## Critical Behaviors Beyond CRUD (All Tested)
-
-| Situation | Engineered Solution | Automated Test Verification |
-| :--- | :--- | :--- |
-| **Concurrent claims** | Atomic conditional update (`UPDATE work_items SET assigneeId = :user WHERE id = :id AND assigneeId IS NULL`). Colliding claim receives `409 Conflict`. | `tests/concurrency.test.ts` fires simultaneous claims; strictly 1 succeeds. |
-| **Stale version edits** | Optimistic locking on integer `version` field. Mismatch returns `409 Conflict` with latest server snapshot and triggers UI conflict drawer. | `tests/concurrency.test.ts` asserts stale edits are rejected with metadata. |
-| **Repeated requests** | `Idempotency-Key` header with SHA-256 fingerprinting. Replays cached response with `Idempotent-Replay: true`. | `tests/idempotency.test.ts` verifies single creation on retries. |
-| **Workflow rules & Approval gate** | Server-enforced state machine. Advancing from `AWAITING_APPROVAL` to `RESOLVED` strictly requires `LEAD`/`ADMIN`, and assignee cannot approve own work (Four-Eyes rule). | `tests/workflow.test.ts` verifies invalid jumps and Four-Eyes rule. |
-| **Resource-level authorization** | Multi-team RBAC (`Viewer`, `Member`, `Lead`, `Admin`). Cross-team item access returns `404 Not Found` to prevent enumeration. | `tests/rbac.test.ts` verifies cross-team isolation and viewer blocks. |
-| **Reliable async outbox** | Side-effects written to `outbox_jobs` in primary transaction. Poller uses `SKIP LOCKED`, exponential backoff, and DLQ. | Verified in `apps/api/src/modules/outbox/outbox.worker.ts`. |
-
----
-
-## Drop-In Website Widget (`widget.js`)
+## 🔌 Drop-In Website Widget (`widget.js`)
 
 Any external website or corporate portal can drop in the instOS operational support widget with a single `<script>` tag:
 
@@ -132,9 +184,9 @@ Features included in the widget:
 
 ---
 
-## Production Cloud Integrations
+## ☁️ Production Cloud Integrations
 
-instOS is configured with real cloud services and zero-config local simulation fallbacks:
+instOS is configured with real production cloud services and zero-config local simulation fallbacks:
 
 1. **Transactional Email (Resend API)**:
    - Configured with live API key and verified custom domain: `support@inistnt.in`.
@@ -152,7 +204,7 @@ instOS is configured with real cloud services and zero-config local simulation f
 
 ---
 
-## Running Locally
+## 🛠️ Running Locally
 
 ### Prerequisites
 - **Node.js**: `v20+`
@@ -180,7 +232,7 @@ npm run db:seed
 npm run dev
 ```
 
-- **Operations Desk**: [http://localhost:5173/ops](http://localhost:5173/ops)
+- **Operations Desk**: [http://localhost:5173](http://localhost:5173)
 - **Customer Portal**: [http://localhost:5173/portal](http://localhost:5173/portal)
 - **API Health Check**: [http://localhost:4000/health](http://localhost:4000/health)
 
@@ -196,7 +248,7 @@ docker compose up --build
 
 ---
 
-## Running Automated Tests
+## 🧪 Running Automated Tests
 
 ```bash
 npm test
@@ -212,7 +264,7 @@ Runs the full Vitest integration suite against real PostgreSQL:
 
 ---
 
-## Defense & Live Discussion Guide (Reviewer Q&A)
+## 🛡️ Reviewer & Interview Discussion Guide
 
 ### 1. 60-Second Architecture Overview
 > **Client (Portal / Widget / Ops Desk)** &rarr; **Express Gateway** &rarr; **Idempotency Filter (SHA-256)** &rarr; **RBAC Service (404/403)** &rarr; **Workflow State Machine** &rarr; **PostgreSQL 16** &rarr; **Transactional Outbox Worker (`SKIP LOCKED`)** &rarr; **Resend API / Cloudinary CDN**.
@@ -224,12 +276,12 @@ Runs the full Vitest integration suite against real PostgreSQL:
 * **Network Retries / Double Clicks**: Every mutation accepts an `Idempotency-Key` header with SHA-256 fingerprinting. The server returns the cached response with `Idempotent-Replay: true`, eliminating duplicate work items.
 * **Two Operators Colliding**: 
   - **Claim Collision**: Atomic conditional update (`WHERE id = :id AND assignee_id IS NULL`). Exactly 1 query updates a row (`200 OK`); the colliding query updates 0 rows and returns `409 Conflict`.
-  - **Stale Version Edit**: Optimistic locking checks `version = :seenVersion`. Mismatches return `409 Conflict` with the latest snapshot, triggering the frontend Conflict Resolution drawer.
+  - **Stale Version Edit**: Optimistic locking checks `version = :seenVersion`. Mismatches return `409 Conflict` with the latest snapshot, triggering the frontend `ConflictDrawer` for side-by-side reconciliation.
 
-### 3. Assumptions Made (Product & Engineering)
+### 3. Key Design Decisions & Assumptions
 * **Four-Eyes Verification**: A Lead can never approve their own work item when advancing to `RESOLVED` (enforced on server).
-* **Resource Isolation**: Accessing an item outside your authorized teams returns `404 Not Found` rather than `403 Forbidden` to prevent resource existence enumeration.
-* **Whole-Item Locking**: If two operators update different fields simultaneously, the second write is rejected with `409` rather than silently merging.
+* **Resource Isolation**: Accessing an item outside your authorized teams returns `404 Not Found` rather than `403 Forbidden` to prevent resource existence enumeration attacks.
+* **Whole-Item Locking**: If two operators update different fields simultaneously, the second write is rejected with `409` rather than silently merging to guarantee deterministic audit consistency.
 
 ### 4. What Changes at 10x Scale?
 1. **Read Replicas**: Route high-frequency dashboard queries (`GET /items`, `/kpis`) to PostgreSQL read replicas.
@@ -237,15 +289,9 @@ Runs the full Vitest integration suite against real PostgreSQL:
 3. **Change Data Capture (CDC)**: Replace periodic `SKIP LOCKED` outbox polling with Debezium and Apache Kafka for sub-millisecond event streaming.
 4. **Real-Time Push**: Integrate WebSockets / Server-Sent Events (SSE) to update operator screens instantly without client polling.
 
-### 5. "Next Week I Would Build"
-* **Automated SLA Escalation Engine**: Rule engine that automatically reassigns items to team leads when SLA reaches 75% without activity.
-* **Inbound Email Webhook Parser**: Automatically convert incoming customer emails sent to `support@inistnt.in` into tracked portal tickets.
-* **Field-Level Diffing**: Interactive visual diff inside the Conflict Resolution Drawer showing exact field changes between conflicting versions.
-
 ---
 
-## Documentation Index
+## 📚 Documentation Index
 
 - [Architecture & Decisions](ENGINEERING_DECISIONS.md) — Deep dive into concurrency, outbox, and RBAC trade-offs.
 - [Known Limitations & Scope Boundaries](KNOWN_LIMITATIONS.md) — Production limits and enterprise scaling considerations.
-

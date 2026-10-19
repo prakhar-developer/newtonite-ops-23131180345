@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   X,
   Zap,
+  Download,
 } from 'lucide-react';
 import { api, ApiError } from '../../services/api';
 import { MetricCard } from '../../components/MetricCard';
@@ -138,6 +139,36 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
     } finally {
       setScanningSla(false);
     }
+  };
+
+  const handleExportCsv = () => {
+    if (items.length === 0) {
+      toast.error('No items to export.');
+      return;
+    }
+    const headers = ['ID', 'Title', 'Team', 'Type', 'Priority', 'Status', 'Assignee', 'SLA Status', 'Created At'];
+    const rows = items.map((item) => [
+      item.id,
+      `"${(item.title || '').replace(/"/g, '""')}"`,
+      item.team?.name || '',
+      item.type || '',
+      item.priority || '',
+      item.status || '',
+      item.assignee?.name || 'Unassigned',
+      item.slaBreached ? 'BREACHED' : 'ON_TARGET',
+      item.createdAt || '',
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `instos_audit_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${items.length} work items to CSV report.`);
   };
 
   // Reset pagination on filter change
@@ -529,6 +560,31 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                 <X size={13} /> Reset Filters
               </button>
             )}
+
+            {/* Export CSV Button for Audit & Compliance */}
+            <button
+              onClick={handleExportCsv}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginLeft: hasActiveFilters ? '10px' : 'auto',
+                transition: 'all 0.15s ease',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              }}
+              title="Export current filtered work items to RFC-4180 CSV report"
+            >
+              <Download size={13} color="#475569" />
+              <span>Export CSV</span>
+            </button>
           </div>
 
           {/* Data Table */}

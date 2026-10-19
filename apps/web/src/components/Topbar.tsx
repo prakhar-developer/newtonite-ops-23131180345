@@ -19,6 +19,7 @@ interface TopbarProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onOpenNewModal?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -26,6 +27,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   searchQuery,
   onSearchChange,
   onOpenNewModal,
+  onOpenCommandPalette,
 }) => {
   const { user, switchPersona } = useAuth();
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
@@ -145,8 +147,9 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Search Bar */}
+        {/* Search Bar / Quick Command Palette Launcher */}
         <div
+          onClick={onOpenCommandPalette}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -157,12 +160,14 @@ export const Topbar: React.FC<TopbarProps> = ({
             width: '260px',
             border: '1px solid transparent',
             transition: 'all 0.15s ease',
+            cursor: onOpenCommandPalette ? 'pointer' : 'default',
           }}
+          title="Press ⌘K or Ctrl+K to open Spotlight Command Palette"
         >
           <Search size={16} color="var(--text-subtle)" />
           <input
             type="text"
-            placeholder="Search items, titles, IDs..."
+            placeholder="Search or press ⌘K..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={{
@@ -172,6 +177,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               fontSize: '13px',
               color: 'var(--text-main)',
               width: '100%',
+              cursor: onOpenCommandPalette ? 'pointer' : 'text',
             }}
           />
           <span

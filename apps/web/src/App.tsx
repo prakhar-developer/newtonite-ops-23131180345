@@ -11,12 +11,14 @@ import { CustomerPortalPage } from './pages/customer/CustomerPortalPage';
 import { CustomerTrackPage } from './pages/customer/CustomerTrackPage';
 import { LoginPage } from './pages/login/LoginPage';
 import { NewTicketModal } from './components/NewTicketModal';
+import { CommandPalette } from './components/CommandPalette';
 
 export const App: React.FC = () => {
   const { user, loading } = useAuth();
   const [currentTab, setCurrentTab] = useState('ops');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Simple clean client path routing
   const path = window.location.pathname;
@@ -67,6 +69,7 @@ export const App: React.FC = () => {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onOpenNewModal={() => setShowNewModal(true)}
+          onOpenCommandPalette={() => setShowCommandPalette(true)}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
@@ -82,6 +85,20 @@ export const App: React.FC = () => {
           {currentTab === 'outbox' && <AdminOutboxPage />}
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onSelectTab={(tab) => {
+          setCurrentTab(tab);
+          setShowCommandPalette(false);
+        }}
+        onOpenNewModal={() => {
+          setShowCommandPalette(false);
+          setShowNewModal(true);
+        }}
+      />
 
       {/* New Work Item Modal */}
       <NewTicketModal
