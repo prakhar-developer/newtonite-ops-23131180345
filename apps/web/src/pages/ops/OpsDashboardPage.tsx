@@ -10,12 +10,19 @@ import {
   Search,
   ExternalLink,
   Plus,
+  ChevronLeft,
+  ChevronRight,
+  ShieldAlert,
+  SlidersHorizontal,
+  X,
+  Zap,
 } from 'lucide-react';
 import { api, ApiError } from '../../services/api';
 import { MetricCard } from '../../components/MetricCard';
 import { StatusBadge, PriorityBadge } from '../../components/StatusBadge';
 import { WorkItemDetailPage } from './WorkItemDetailPage';
 import { ConflictDrawer } from '../../components/ConflictDrawer';
+import { useToast } from '../../context/ToastContext';
 
 interface OpsDashboardPageProps {
   searchQuery: string;
@@ -26,6 +33,8 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
   searchQuery,
   onOpenNewModal,
 }) => {
+  const toast = useToast();
+
   const [kpis, setKpis] = useState<any>({
     totalItems: 0,
     assignedToMe: 0,
@@ -36,26 +45,55 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
   });
 
   const [items, setItems] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'all' | 'assigned_to_me' | 'unassigned_urgent' | 'awaiting_approval'>('all');
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Concurrency Conflict state
+  // Filters
+  const [activeView, setActiveView] = useState<'all' | 'assigned_to_me' | 'unassigned_urgent' | 'awaiting_approval'>('all');
+  const [teamFilter, setTeamFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [slaBreachedOnly, setSlaBreachedOnly] = useState<boolean>(false);
+
+  // Keyset Cursor Pagination
+  const [page, setPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<string[]>([]);
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+
+  // Selected item drawer & conflict drawer
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [conflictError, setConflictError] = useState<ApiError | null>(null);
 
-  const fetchDashboardData = async () => {
+  // Live Auto-Refresh
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  // Load teams once
+  useEffect(() => {
+    api.listTeams().then(setTeams).catch(console.error);
+  }, []);
+
+  const fetchDashboardData = async (cursor?: string) => {
     try {
       setLoading(true);
       const [kpiData, itemsData] = await Promise.all([
         api.getKpis(),
         api.listWorkItems({
           view: activeView,
+          teamId: teamFilter || undefined,
+          status: (statusFilter as any) || undefined,
+          priority: (priorityFilter as any) || undefined,
+          slaBreached: slaBreachedOnly ? true : undefined,
           q: searchQuery || undefined,
-          limit: 25,
+          cursor,
+          limit: 15,
         }),
       ]);
       setKpis(kpiData);
       setItems(itemsData.items);
+      setNextCursor(itemsData.nextCursor);
+      setHasMore(itemsData.hasMore);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -63,13 +101,73 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
     }
   };
 
+  // Reset pagination on filter change
   useEffect(() => {
-    fetchDashboardData();
-  }, [activeView, searchQuery]);
+    setPage(1);
+    setCursorHistory([]);
+    setCurrentCursor(undefined);
+    fetchDashboardData(undefined);
+  }, [activeView, teamFilter, statusFilter, priorityFilter, slaBreachedOnly, searchQuery]);
+
+  // Periodic Auto-refresh (every 12 seconds)
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      fetchDashboardData(currentCursor);
+    }, 12000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, activeView, teamFilter, statusFilter, priorityFilter, slaBreachedOnly, searchQuery, currentCursor]);
+
+  // Handle Next Page
+  const handleNextPage = () => {
+    if (!nextCursor || !hasMore) return;
+    setCursorHistory((prev) => [...prev, currentCursor || '']);
+    setCurrentCursor(nextCursor);
+    setPage((p) => p + 1);
+    fetchDashboardData(nextCursor);
+  };
+
+  // Handle Previous Page
+  const handlePrevPage = () => {
+    if (page <= 1) return;
+    const newHistory = [...cursorHistory];
+    const prevCursor = newHistory.pop();
+    setCursorHistory(newHistory);
+    setCurrentCursor(prevCursor || undefined);
+    setPage((p) => p - 1);
+    fetchDashboardData(prevCursor || undefined);
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setActiveView('all');
+    setTeamFilter('');
+    setStatusFilter('');
+    setPriorityFilter('');
+    setSlaBreachedOnly(false);
+  };
+
+  const hasActiveFilters = teamFilter || statusFilter || priorityFilter || slaBreachedOnly || activeView !== 'all';
+
+  // Quick Claim from row
+  const handleQuickClaim = async (e: React.MouseEvent, itemId: string) => {
+    e.stopPropagation();
+    try {
+      await api.claimWorkItem(itemId);
+      toast.success('Work item claimed successfully!');
+      fetchDashboardData(currentCursor);
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 409) {
+        setConflictError(err);
+      } else {
+        toast.error((err as Error).message);
+      }
+    }
+  };
 
   return (
     <div className="content-body">
-      {/* Header Row (ShipNova style) */}
+      {/* Header Row */}
       <div
         style={{
           display: 'flex',
@@ -83,30 +181,62 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              width: '40px',
-              height: '40px',
+              width: '42px',
+              height: '42px',
               borderRadius: '10px',
               background: '#0f172a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#ffffff',
+              boxShadow: '0 4px 10px rgba(15, 23, 42, 0.15)',
             }}
           >
-            <Layers size={20} />
+            <Layers size={22} />
           </div>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
               Operations Command Center
             </h1>
             <p style={{ fontSize: '13px', color: '#64748b' }}>
-              High-concurrency cross-team operational dispatch and triage
+              High-concurrency operational dispatch, SLA governance & team triage
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button className="btn-secondary" onClick={fetchDashboardData}>
+          {/* Auto-Refresh Toggle Pill */}
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              borderRadius: '20px',
+              background: autoRefresh ? '#ecfdf5' : '#f1f5f9',
+              border: `1px solid ${autoRefresh ? '#a7f3d0' : '#e2e8f0'}`,
+              color: autoRefresh ? '#065f46' : '#64748b',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title={autoRefresh ? 'Live auto-refresh enabled (every 12s)' : 'Auto-refresh paused'}
+          >
+            <div
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: autoRefresh ? '#10b981' : '#94a3b8',
+                boxShadow: autoRefresh ? '0 0 6px #10b981' : 'none',
+              }}
+            />
+            {autoRefresh ? 'Live Sync (12s)' : 'Sync Paused'}
+          </button>
+
+          <button className="btn-secondary" onClick={() => fetchDashboardData(currentCursor)}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
           <button className="btn-primary" onClick={onOpenNewModal}>
@@ -115,13 +245,13 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
         </div>
       </div>
 
-      {/* KPI Metric Cards Row (Exact ShipNova look) */}
+      {/* KPI Metric Cards Row */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
           gap: '16px',
-          marginBottom: '28px',
+          marginBottom: '24px',
         }}
       >
         <MetricCard
@@ -166,9 +296,9 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
         />
         <MetricCard
           title="Customer CSAT"
-          value={`${kpis.avgCsat} / 5`}
-          trend="+98% On-Time SLA"
-          isPositive={true}
+          value={`${kpis.avgCsat || 4.8} / 5`}
+          trend={`${kpis.slaBreached || 0} Breached SLAs`}
+          isPositive={(kpis.slaBreached || 0) === 0}
           icon={CheckCircle2}
           iconColor="#0284c7"
           sparklineColor="#0284c7"
@@ -178,15 +308,15 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
 
       {/* Main Layout: Left Data Table + Right Rail */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
-        {/* Left: Filter Tabs & Data Table */}
-        <div className="card" style={{ padding: '20px 24px', overflow: 'hidden' }}>
-          {/* Segmented Control Bar */}
+        {/* Left: Filter Tabs, Deep Dropdowns & Data Table */}
+        <div className="card" style={{ padding: '22px 24px', overflow: 'hidden' }}>
+          {/* Row 1: Fast View Segmented Control */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '20px',
+              marginBottom: '16px',
               flexWrap: 'wrap',
               gap: '12px',
             }}
@@ -219,8 +349,116 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
             </div>
 
             <div style={{ fontSize: '12px', color: 'var(--text-subtle)', fontWeight: 600 }}>
-              Showing {items.length} items
+              Showing {items.length} items on Page {page}
             </div>
+          </div>
+
+          {/* Row 2: Multi-Dimensional Filter Bar (Team, Status, Priority) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 14px',
+              background: '#f8fafc',
+              borderRadius: '10px',
+              border: '1px solid var(--border-light)',
+              marginBottom: '18px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>
+              <SlidersHorizontal size={14} /> Filters:
+            </div>
+
+            {/* Team Filter */}
+            <select
+              className="instos-select"
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+              style={{ width: 'auto', padding: '6px 28px 6px 10px', fontSize: '12px', height: '34px' }}
+            >
+              <option value="">All Operational Teams</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              className="instos-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ width: 'auto', padding: '6px 28px 6px 10px', fontSize: '12px', height: '34px' }}
+            >
+              <option value="">All Statuses</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="AWAITING_APPROVAL">Awaiting Approval</option>
+              <option value="AWAITING_CUSTOMER">Awaiting Customer</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+
+            {/* Priority Filter */}
+            <select
+              className="instos-select"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              style={{ width: 'auto', padding: '6px 28px 6px 10px', fontSize: '12px', height: '34px' }}
+            >
+              <option value="">All Priorities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="URGENT">Urgent</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+
+            {/* SLA Breached Toggle */}
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: slaBreachedOnly ? '#dc2626' : '#64748b',
+                cursor: 'pointer',
+                marginLeft: '4px',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={slaBreachedOnly}
+                onChange={(e) => setSlaBreachedOnly(e.target.checked)}
+                style={{ cursor: 'pointer', accentColor: '#dc2626' }}
+              />
+              <span>Breached SLA Only</span>
+            </label>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginLeft: 'auto',
+                }}
+              >
+                <X size={13} /> Reset Filters
+              </button>
+            )}
           </div>
 
           {/* Data Table */}
@@ -234,36 +472,39 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                   <th>Status</th>
                   <th>Assignee</th>
                   <th>SLA Target</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-subtle)' }}>
-                      No operational work items found in this view.
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-subtle)' }}>
+                      No operational work items match the current filter criteria.
                     </td>
                   </tr>
                 ) : (
                   items.map((item) => (
                     <tr key={item.id} onClick={() => setSelectedItemId(item.id)}>
                       <td>
-                        <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '2px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '3px' }}>
                           {item.title}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>v{item.version}</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px' }}>
+                            v{item.version}
+                          </span>
                           {item.ticket && (
                             <>
                               <span>•</span>
                               <span style={{ color: '#4f46e5', fontWeight: 600 }}>
-                                #{item.ticket.ticketNumber} ({item.ticket.customer?.name})
+                                Ticket #{item.ticket.ticketNumber} ({item.ticket.customer?.name || 'Customer'})
                               </span>
                             </>
                           )}
                         </div>
                       </td>
                       <td>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
                           {item.team?.name}
                         </span>
                       </td>
@@ -291,7 +532,9 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                       </td>
                       <td>
                         {item.slaBreached ? (
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>BREACHED</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <ShieldAlert size={11} /> BREACHED
+                          </span>
                         ) : item.slaDeadline ? (
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             {new Date(item.slaDeadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -300,15 +543,77 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
                           <span style={{ fontSize: '12px', color: 'var(--text-subtle)' }}>—</span>
                         )}
                       </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {!item.assigneeId ? (
+                          <button
+                            onClick={(e) => handleQuickClaim(e, item.id)}
+                            style={{
+                              background: '#0f172a',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '5px 10px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Zap size={12} /> Claim
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: 'var(--text-subtle)', fontWeight: 600 }}>
+                            View &rarr;
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Keyset Cursor Pagination Footer Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: '18px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--border-light)',
+            }}
+          >
+            <div style={{ fontSize: '12.5px', color: '#64748b' }}>
+              Showing {items.length} items (Page {page})
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-secondary"
+                disabled={page <= 1}
+                onClick={handlePrevPage}
+                style={{ padding: '6px 14px', fontSize: '12px', opacity: page <= 1 ? 0.5 : 1 }}
+              >
+                <ChevronLeft size={14} /> Previous
+              </button>
+
+              <button
+                className="btn-secondary"
+                disabled={!hasMore}
+                onClick={handleNextPage}
+                style={{ padding: '6px 14px', fontSize: '12px', opacity: !hasMore ? 0.5 : 1 }}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Right Rail: Recent Activity & SLA Service Health (ShipNova look) */}
+        {/* Right Rail: Health & Support Hub */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Account Service Health Card */}
           <div className="card" style={{ padding: '20px' }}>
@@ -387,7 +692,7 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
         <WorkItemDetailPage
           itemId={selectedItemId}
           onClose={() => setSelectedItemId(null)}
-          onItemUpdated={fetchDashboardData}
+          onItemUpdated={() => fetchDashboardData(currentCursor)}
           onConflict={(err) => setConflictError(err)}
         />
       )}
@@ -398,7 +703,7 @@ export const OpsDashboardPage: React.FC<OpsDashboardPageProps> = ({
         onClose={() => setConflictError(null)}
         onReload={() => {
           setConflictError(null);
-          fetchDashboardData();
+          fetchDashboardData(currentCursor);
         }}
         errorMessage={conflictError?.message || 'A concurrency conflict occurred on the server.'}
         conflictDetails={conflictError?.details as any}

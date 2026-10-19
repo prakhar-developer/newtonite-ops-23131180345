@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { StatusBadge, PriorityBadge } from '../../components/StatusBadge';
+import { useToast } from '../../context/ToastContext';
 
 export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
+  const toast = useToast();
   const [ticket, setTicket] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +53,11 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
     setSendingReply(true);
     try {
       await api.addCustomerMessage(token, { body: replyBody.trim() });
+      toast.success('Reply posted successfully!');
       setReplyBody('');
       await fetchTicket();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSendingReply(false);
     }
@@ -65,10 +68,11 @@ export const CustomerTrackPage: React.FC<{ token: string }> = ({ token }) => {
     setSubmittingCsat(true);
     try {
       await api.submitCsatFeedback(token, { rating, feedback });
+      toast.success('Thank you! Your feedback has been confirmed and the ticket is now closed.');
       setCsatSubmitted(true);
       await fetchTicket();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmittingCsat(false);
     }

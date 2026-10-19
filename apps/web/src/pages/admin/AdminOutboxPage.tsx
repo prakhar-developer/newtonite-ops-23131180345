@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, RefreshCw, AlertTriangle, CheckCircle, RotateCcw } from 'lucide-react';
 import { api } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 export const AdminOutboxPage: React.FC = () => {
+  const toast = useToast();
   const [stats, setStats] = useState<any>({
     PENDING: 0,
     PROCESSING: 0,
@@ -35,9 +37,10 @@ export const AdminOutboxPage: React.FC = () => {
   const handleRetry = async (jobId: string) => {
     try {
       await api.retryOutboxJob(jobId);
+      toast.success('Outbox job re-queued for processing');
       await fetchOutbox();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

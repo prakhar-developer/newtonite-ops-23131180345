@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   onClose,
   onItemCreated,
 }) => {
+  const toast = useToast();
   const [teams, setTeams] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -47,12 +49,13 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
         priority,
         teamId,
       });
+      toast.success('Work item created successfully!');
       setTitle('');
       setDescription('');
       onItemCreated();
       onClose();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmitting(false);
     }

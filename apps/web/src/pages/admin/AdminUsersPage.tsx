@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Plus, UserPlus, Check } from 'lucide-react';
 import { api } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 export const AdminUsersPage: React.FC = () => {
+  const toast = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +44,13 @@ export const AdminUsersPage: React.FC = () => {
         password,
         systemRole,
       });
+      toast.success(`Operator account "${name}" created successfully!`);
       setName('');
       setEmail('');
       setShowModal(false);
       await fetchData();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -56,9 +59,10 @@ export const AdminUsersPage: React.FC = () => {
   const handleRoleChange = async (userId: string, teamId: string, newRole: string) => {
     try {
       await api.updateUserRole(userId, teamId, newRole);
+      toast.success(`Team role updated to ${newRole}`);
       await fetchData();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     }
   };
 

@@ -86,7 +86,22 @@ export function createApp() {
   app.use(`${prefix}/items`, workItemsRouter);
   app.use(`${prefix}/teams`, teamsRouter);
   app.use(`${prefix}/users`, usersRouter);
-  app.use(`${prefix}/settings`, settingsRouter);
+  // Optional static frontend serve if built dist exists (for Docker & unified container)
+  const webDistPath = path.resolve(process.cwd(), 'apps/web/dist');
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(webDistPath)) {
+      app.use(express.static(webDistPath));
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/uploads')) {
+          return next();
+        }
+        res.sendFile(path.join(webDistPath, 'index.html'));
+      });
+    }
+  } catch {
+    // Non-fatal if fs check fails
+  }
 
   // Global Error Handler
   app.use(errorHandler);

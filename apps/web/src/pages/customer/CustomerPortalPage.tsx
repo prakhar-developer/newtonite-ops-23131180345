@@ -19,8 +19,10 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 export const CustomerPortalPage: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'raise' | 'track'>('raise');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -92,8 +94,9 @@ export const CustomerPortalPage: React.FC = () => {
         channel: 'PORTAL',
       });
       setCreatedTicket(res);
+      toast.success('Support request submitted successfully!');
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmitting(false);
     }

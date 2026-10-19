@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Shield } from 'lucide-react';
 import { api } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 export const AdminTeamsPage: React.FC = () => {
+  const toast = useToast();
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -33,13 +35,14 @@ export const AdminTeamsPage: React.FC = () => {
     setSubmitting(true);
     try {
       await api.createTeam({ name, slug, description });
+      toast.success(`Operational team "${name}" created!`);
       setName('');
       setSlug('');
       setDescription('');
       setShowModal(false);
       await fetchTeams();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmitting(false);
     }

@@ -11,10 +11,15 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle,
+  UserPlus,
+  ArrowUpRight,
+  Sparkles,
+  FileEdit,
 } from 'lucide-react';
 import { api, ApiError } from '../../services/api';
 import { StatusBadge, PriorityBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 interface WorkItemDetailPageProps {
   itemId: string;
@@ -30,7 +35,10 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
   onConflict,
 }) => {
   const { user } = useAuth();
+  const toast = useToast();
+
   const [item, setItem] = useState<any | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'comments' | 'timeline'>('comments');
 
@@ -44,16 +52,24 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
   const [transitionReason, setTransitionReason] = useState<string>('');
   const [transitioning, setTransitioning] = useState(false);
 
+  // Rejection inline state
+  const [showRejectBox, setShowRejectBox] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
   const fetchItem = async () => {
     try {
       setLoading(true);
-      const data = await api.getWorkItemById(itemId);
+      const [data, usersData] = await Promise.all([
+        api.getWorkItemById(itemId),
+        api.listUsers().catch(() => []),
+      ]);
       setItem(data);
+      setUsers(usersData);
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 409) {
         onConflict(err);
       } else {
-        alert((err as Error).message);
+        toast.error((err as Error).message);
       }
     } finally {
       setLoading(false);
@@ -68,38 +84,82 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
   const handleClaim = async () => {
     try {
       await api.claimWorkItem(itemId);
+      toast.success('Successfully claimed work item!');
       await fetchItem();
       onItemUpdated();
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 409) {
         onConflict(err);
       } else {
-        alert((err as Error).message);
+        toast.error((err as Error).message);
+      }
+    }
+  };
+
+  // Handle Reassign
+  const handleReassign = async (newAssigneeId: string) => {
+    try {
+      await api.updateWorkItem(itemId, {
+        version: item.version,
+        assigneeId: newAssigneeId || null,
+      });
+      toast.success(newAssigneeId ? 'Assignee updated successfully' : 'Work item unassigned');
+      await fetchItem();
+      onItemUpdated();
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 409) {
+        onConflict(err);
+      } else {
+        toast.error((err as Error).message);
+      }
+    }
+  };
+
+  // Handle Priority Escalation
+  const handlePriorityChange = async (newPriority: string) => {
+    try {
+      await api.updateWorkItem(itemId, {
+        version: item.version,
+        priority: newPriority,
+      });
+      toast.success(`Priority updated to ${newPriority}`);
+      await fetchItem();
+      onItemUpdated();
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 409) {
+        onConflict(err);
+      } else {
+        toast.error((err as Error).message);
       }
     }
   };
 
   // Handle State Transition
-  const handleTransition = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetStatus) return;
+  const handleTransition = async (e?: React.FormEvent, explicitStatus?: string, explicitReason?: string) => {
+    if (e) e.preventDefault();
+    const finalStatus = explicitStatus || targetStatus;
+    const finalReason = explicitReason || transitionReason;
+    if (!finalStatus) return;
 
     setTransitioning(true);
     try {
       await api.transitionWorkItem(itemId, {
         version: item.version,
-        targetStatus,
-        reason: transitionReason || undefined,
+        targetStatus: finalStatus,
+        reason: finalReason || undefined,
       });
+      toast.success(`Transitioned to ${finalStatus}`);
       setTargetStatus('');
       setTransitionReason('');
+      setShowRejectBox(false);
+      setRejectReason('');
       await fetchItem();
       onItemUpdated();
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 409) {
         onConflict(err);
       } else {
-        alert((err as Error).message);
+        toast.error((err as Error).message);
       }
     } finally {
       setTransitioning(false);
@@ -117,10 +177,11 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
         body: commentBody.trim(),
         isInternal,
       });
+      toast.success(isInternal ? 'Internal note added' : 'Reply sent');
       setCommentBody('');
       await fetchItem();
     } catch (err) {
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setSubmittingComment(false);
     }
@@ -130,7 +191,7 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
     return (
       <div className="drawer-overlay" onClick={onClose}>
         <div className="drawer-container" style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div>Loading work item...</div>
+          <div style={{ fontSize: '13.5px', color: '#64748b' }}>Loading operational work item...</div>
         </div>
       </div>
     );
@@ -206,23 +267,73 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
 
             {/* Lead Approval Gate Button */}
             {permissions.canApprove && item.status === 'AWAITING_APPROVAL' && (
-              <button
-                className="btn-indigo"
-                onClick={() => {
-                  setTargetStatus('RESOLVED');
-                  setTransitionReason('Approved by Team Lead (Four-Eyes verification satisfied)');
-                }}
-                style={{ fontSize: '12px', padding: '8px 14px', background: '#16a34a' }}
-              >
-                <ShieldCheck size={15} /> Lead Approve & Resolve
-              </button>
+              <>
+                <button
+                  className="btn-indigo"
+                  onClick={() => handleTransition(undefined, 'RESOLVED', 'Approved by Team Lead (Four-Eyes verification satisfied)')}
+                  disabled={transitioning}
+                  style={{ fontSize: '12px', padding: '8px 14px', background: '#16a34a' }}
+                >
+                  <ShieldCheck size={15} /> Lead Approve & Resolve
+                </button>
+
+                <button
+                  onClick={() => setShowRejectBox(!showRejectBox)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #fca5a5',
+                    color: '#dc2626',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Reject & Revise
+                </button>
+              </>
             )}
           </div>
         </div>
 
+        {/* Lead Rejection Form Box */}
+        {showRejectBox && (
+          <div
+            style={{
+              padding: '16px 28px',
+              background: '#fef2f2',
+              borderBottom: '1px solid #fecaca',
+            }}
+          >
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#991b1b', marginBottom: '6px' }}>
+              Lead Rejection Reason (Moves back to In Progress):
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                className="instos-input"
+                placeholder="State why this approval is rejected (e.g. Missing bank verification slip)..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{ borderColor: '#fca5a5' }}
+              />
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => handleTransition(undefined, 'IN_PROGRESS', rejectReason || 'Rejected by Lead')}
+                disabled={transitioning}
+                style={{ background: '#dc2626', flexShrink: 0, padding: '8px 16px', fontSize: '12px' }}
+              >
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-          {/* Metadata Grid */}
+          {/* Metadata Grid (with Quick Reassign & Priority Change) */}
           <div
             style={{
               display: 'grid',
@@ -235,20 +346,63 @@ export const WorkItemDetailPage: React.FC<WorkItemDetailPageProps> = ({
               fontSize: '12px',
             }}
           >
+            {/* 1. Assignee Reassign Selector */}
             <div>
-              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '2px' }}>Assignee</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                {item.assignee?.name || <span style={{ color: '#ea580c' }}>Unassigned</span>}
+              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '4px', fontWeight: 700 }}>
+                Assignee
               </span>
+              {permissions.canEdit ? (
+                <select
+                  className="instos-select"
+                  value={item.assigneeId || ''}
+                  onChange={(e) => handleReassign(e.target.value)}
+                  style={{ padding: '4px 24px 4px 8px', fontSize: '11.5px', height: '30px' }}
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                  {item.assignee?.name || <span style={{ color: '#ea580c' }}>Unassigned</span>}
+                </span>
+              )}
             </div>
+
+            {/* 2. Priority Escalation Selector */}
             <div>
-              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '2px' }}>Created By</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{item.creator?.name || 'Customer'}</span>
+              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '4px', fontWeight: 700 }}>
+                Operational Priority
+              </span>
+              {permissions.canEdit ? (
+                <select
+                  className="instos-select"
+                  value={item.priority}
+                  onChange={(e) => handlePriorityChange(e.target.value)}
+                  style={{ padding: '4px 24px 4px 8px', fontSize: '11.5px', height: '30px' }}
+                >
+                  <option value="LOW">Low (7 Days)</option>
+                  <option value="MEDIUM">Medium (72h)</option>
+                  <option value="HIGH">High (24h)</option>
+                  <option value="URGENT">Urgent (6h)</option>
+                  <option value="CRITICAL">Critical (2h)</option>
+                </select>
+              ) : (
+                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{item.priority}</span>
+              )}
             </div>
+
+            {/* 3. SLA Target */}
             <div>
-              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '2px' }}>SLA Target</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+              <span style={{ color: 'var(--text-subtle)', display: 'block', marginBottom: '4px', fontWeight: 700 }}>
+                SLA Target
+              </span>
+              <span style={{ fontWeight: 600, color: item.slaBreached ? '#dc2626' : 'var(--text-main)' }}>
                 {item.slaDeadline ? new Date(item.slaDeadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                {item.slaBreached && ' (Expired)'}
               </span>
             </div>
           </div>

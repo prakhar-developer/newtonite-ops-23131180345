@@ -184,6 +184,16 @@ npm run dev
 - **Customer Portal**: [http://localhost:5173/portal](http://localhost:5173/portal)
 - **API Health Check**: [http://localhost:4000/health](http://localhost:4000/health)
 
+### Running via Docker Compose (1-Command Evaluation)
+
+```bash
+docker compose up --build
+```
+- Starts PostgreSQL 16 container with healthchecks.
+- Builds and runs the unified instOS application container.
+- Automatically pushes the Prisma schema and seeds the rich 36-item multi-team operational dataset.
+- Access the platform at **http://localhost:4000**.
+
 ---
 
 ## Running Automated Tests
@@ -202,7 +212,40 @@ Runs the full Vitest integration suite against real PostgreSQL:
 
 ---
 
+## Defense & Live Discussion Guide (Reviewer Q&A)
+
+### 1. 60-Second Architecture Overview
+> **Client (Portal / Widget / Ops Desk)** &rarr; **Express Gateway** &rarr; **Idempotency Filter (SHA-256)** &rarr; **RBAC Service (404/403)** &rarr; **Workflow State Machine** &rarr; **PostgreSQL 16** &rarr; **Transactional Outbox Worker (`SKIP LOCKED`)** &rarr; **Resend API / Cloudinary CDN**.
+> All critical state transitions and audit logs are committed within the **exact same ACID database transaction**, guaranteeing that history can never diverge from reality.
+
+### 2. Failure Scenarios & Resilience
+* **Database Down**: The health check endpoint immediately reports `503 Service Unavailable (database: disconnected)`. Mutations fail cleanly without leaving orphaned records.
+* **Worker Crashes Mid-Job**: The Outbox Worker leases jobs with a timestamp. A crash recovery sweeper automatically reclaims jobs stranded in `PROCESSING` status for over 5 minutes.
+* **Network Retries / Double Clicks**: Every mutation accepts an `Idempotency-Key` header with SHA-256 fingerprinting. The server returns the cached response with `Idempotent-Replay: true`, eliminating duplicate work items.
+* **Two Operators Colliding**: 
+  - **Claim Collision**: Atomic conditional update (`WHERE id = :id AND assignee_id IS NULL`). Exactly 1 query updates a row (`200 OK`); the colliding query updates 0 rows and returns `409 Conflict`.
+  - **Stale Version Edit**: Optimistic locking checks `version = :seenVersion`. Mismatches return `409 Conflict` with the latest snapshot, triggering the frontend Conflict Resolution drawer.
+
+### 3. Assumptions Made (Product & Engineering)
+* **Four-Eyes Verification**: A Lead can never approve their own work item when advancing to `RESOLVED` (enforced on server).
+* **Resource Isolation**: Accessing an item outside your authorized teams returns `404 Not Found` rather than `403 Forbidden` to prevent resource existence enumeration.
+* **Whole-Item Locking**: If two operators update different fields simultaneously, the second write is rejected with `409` rather than silently merging.
+
+### 4. What Changes at 10x Scale?
+1. **Read Replicas**: Route high-frequency dashboard queries (`GET /items`, `/kpis`) to PostgreSQL read replicas.
+2. **Table Partitioning**: Partition `activity_events` and `outbox_jobs` tables by monthly `createdAt` ranges to keep active indexes in memory.
+3. **Change Data Capture (CDC)**: Replace periodic `SKIP LOCKED` outbox polling with Debezium and Apache Kafka for sub-millisecond event streaming.
+4. **Real-Time Push**: Integrate WebSockets / Server-Sent Events (SSE) to update operator screens instantly without client polling.
+
+### 5. "Next Week I Would Build"
+* **Automated SLA Escalation Engine**: Rule engine that automatically reassigns items to team leads when SLA reaches 75% without activity.
+* **Inbound Email Webhook Parser**: Automatically convert incoming customer emails sent to `support@inistnt.in` into tracked portal tickets.
+* **Field-Level Diffing**: Interactive visual diff inside the Conflict Resolution Drawer showing exact field changes between conflicting versions.
+
+---
+
 ## Documentation Index
 
 - [Architecture & Decisions](ENGINEERING_DECISIONS.md) — Deep dive into concurrency, outbox, and RBAC trade-offs.
-- [Known Limitations & Roadmap](KNOWN_LIMITATIONS.md) — Production limits and enterprise scaling considerations.
+- [Known Limitations & Scope Boundaries](KNOWN_LIMITATIONS.md) — Production limits and enterprise scaling considerations.
+

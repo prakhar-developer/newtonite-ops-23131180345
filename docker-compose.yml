@@ -18,5 +18,22 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: instos-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/instos?schema=public
+      PORT: 4000
+      JWT_SECRET: instos_production_jwt_secret_dev_31180345
+      NODE_ENV: production
+    ports:
+      - "4000:4000"
+
 volumes:
   instos_pgdata:
