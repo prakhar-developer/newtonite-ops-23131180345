@@ -39,6 +39,22 @@ export function createApp() {
   const uploadsPath = path.resolve(process.cwd(), 'uploads');
   app.use('/uploads', express.static(uploadsPath));
 
+  // Root platform status endpoint (Railway / browser initial ping)
+  app.get('/', (_req, res) => {
+    res.json({
+      name: 'instOS Operational Platform API',
+      version: '1.0.0',
+      status: 'active',
+      health: '/health',
+      docs: '/api/v1',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get('/favicon.ico', (_req, res) => {
+    res.status(204).end();
+  });
+
   // Health check
   app.get('/health', async (_req, res) => {
     try {

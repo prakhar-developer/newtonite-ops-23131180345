@@ -13,7 +13,7 @@
     "build:widget": "vite build apps/widget",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "node apps/api/dist/server.js",
+    "start": "tsx apps/api/src/server.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
@@ -33,9 +33,11 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.475.0",
     "nodemailer": "^6.10.0",
+    "prisma": "^6.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^4.1.2",
+    "tsx": "^4.19.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -50,9 +52,7 @@
     "@types/supertest": "^6.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
-    "prisma": "^6.4.1",
     "supertest": "^7.0.0",
-    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
     "vitest": "^3.0.5"
